@@ -49,7 +49,9 @@ class NoteTrack {
     }
 }
 
-fun convertMidiToNoteTracks(music: Midi1Music, bpm: Double=100.0): HashMap<String, NoteTrack> {
+// Note: bpm should be in file name or sent as metadata from api
+// following default value is just for testing purposes
+fun convertMidiToNoteTracks(music: Midi1Music, bpm: Double = 100.0): HashMap<String, NoteTrack> {
     val noteTracks = HashMap<String, NoteTrack>()
     val ppqn = music.deltaTimeSpec.toDouble()
     val MILISECONDS_IN_MIN = 60000.0
@@ -73,7 +75,7 @@ fun convertMidiToNoteTracks(music: Midi1Music, bpm: Double=100.0): HashMap<Strin
             if (type == "Note On" || type == "Note Off") { // Note On event
                 val noteNumber = event.message.msb // First data byte: note number
 //                val velocity = event.message.lsb  // Second data byte: velocity
-                val time  = event.deltaTime.toDouble() * (MILISECONDS_IN_MIN / (ppqn * bpm))
+                val time = event.deltaTime.toDouble() * (MILISECONDS_IN_MIN / (ppqn * bpm))
                 culTime += time
                 if (type == "Note On") {
                     val noteName = gmDrumMap.getOrDefault(noteNumber.toInt(), "No name")
@@ -82,7 +84,10 @@ fun convertMidiToNoteTracks(music: Midi1Music, bpm: Double=100.0): HashMap<Strin
                     noteTrack.addNoteOn(culTime);
                     noteTracks[noteName] = noteTrack
                 }
-                Log.d("MidiEvent", "${event.deltaTime} : $type - Note: $noteNumber When to run: ${culTime}ms")
+                Log.d(
+                    "MidiEvent",
+                    "${event.deltaTime} : $type - Note: $noteNumber When to run: ${culTime}ms"
+                )
             }
         }
     }
