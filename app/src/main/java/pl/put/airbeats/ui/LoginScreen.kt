@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -22,18 +26,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pl.put.airbeats.R
 import pl.put.airbeats.ui.theme.AirBeatsTheme
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
-import com.google.firebase.firestore.toObject
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 
 @Composable
-fun LoginScreen(userToken: String
-                , updateUserToken: (String) -> Unit
+fun LoginScreen(auth: FirebaseAuth
+                , changeUID: (String) -> Unit
                 , modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier
@@ -43,42 +49,59 @@ fun LoginScreen(userToken: String
         .padding(top = 20.dp)
         ,verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        val db = Firebase.firestore
-
-        var username by remember { mutableStateOf("") }
+        var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
+        var passwordVisible by remember { mutableStateOf(false) }
 
         fun login() {
-            // TODO
-            db.collection("users")
-                .get()
-                .addOnSuccessListener { result ->
-                    for (document in result) {
-                        Log.d(TAG, "${document.id} => ${document.data}")
-                    }
-                }
-                .addOnFailureListener { exception ->
-                    Log.w(TAG, "Error getting documents.", exception)
-                }
-            Log.d("AirBeats","username: $username")
+            if(email.isEmpty() || password.isEmpty()){
+                return
+            }
+            Log.d("AirBeats","username: $email")
             Log.d("AirBeats","password: $password")
-            updateUserToken(userToken)
-            Log.d("AirBeats","userToken: $userToken")
+            auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Sign in success, update UI with the signed-in user's information
+                    Log.d("AirBeats", "signInWithEmail:success")
+                    val userUID = auth.currentUser!!.uid
+                    Log.d("AirBeats","User logged in: $userUID")
+                    changeUID(userUID)
+                } else {
+                    // If sign in fails, display a message to the user.
+                    Log.w("AirBeats", "signInWithEmail:failure", task.exception)
+                }
+            }
         }
         fun register() {
-            // TODO
-            Log.d("AirBeats","username: $username")
+            if(email.isEmpty() || password.isEmpty()){
+                return
+            }
+            Log.d("AirBeats","username: $email")
             Log.d("AirBeats","password: $password")
-            Log.d("AirBeats","userToken: $userToken")
+            // Email and password requirements TODO
+            auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Sign in success, update UI with the signed-in user's information
+                    Log.d("AirBeats", "createUserWithEmail:success")
+                    val userUID = auth.currentUser!!.uid
+                    Log.d("AirBeats","New user registered: $userUID")
+                    changeUID(userUID)
+                } else {
+                    // If sign in fails, display a message to the user.
+                    Log.w("AirBeats", "createUserWithEmail:failure", task.exception)
+                }
+            }
         }
 
         Image(painter = painterResource(R.drawable.temporary_logo)
             , "logo"
         )
 
-        TextField(value =  username
-            , onValueChange = {username = it}
-            , label = { Text("Username") }
+        TextField(value =  email
+            , onValueChange = {email = it}
+            , label = { Text("Email") }
             , singleLine = true
             , keyboardOptions = KeyboardOptions()
         )
@@ -87,7 +110,17 @@ fun LoginScreen(userToken: String
             , onValueChange = {password = it}
             , label = { Text("Password") }
             , singleLine = true
-            , keyboardOptions = KeyboardOptions()
+            , visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
+            , keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            , trailingIcon = {
+                val image = Icons.Filled.Search
+                // Please provide localized description for accessibility services
+                val description = if (passwordVisible) "Hide password" else "Show password"
+
+                IconButton(onClick = {passwordVisible = !passwordVisible}){
+                    Icon(imageVector  = image, description)
+                }
+            }
         )
 
         Row (modifier = Modifier
@@ -112,6 +145,9 @@ fun LoginScreen(userToken: String
 @Composable
 fun PreviewLogin() {
     AirBeatsTheme {
-        LoginScreen("",{ Log.d("AirBeats","userToken changed to: $it")})
+        LoginScreen(auth = Firebase.auth
+            , {Log.d("AirBeats","New user registered: $it")}
+            , modifier = Modifier
+        )
     }
 }
