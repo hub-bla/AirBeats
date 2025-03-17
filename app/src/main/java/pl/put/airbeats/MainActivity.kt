@@ -32,16 +32,16 @@ val gmDrumMap = hashMapOf(
 )
 
 class NoteTrack {
-    private var nOfPlays = 0;
-    private val noteOnsTimesInMs = mutableListOf<Double>();
+    private var nOfPlays = 0
+    private val noteOnsTimesInMs = mutableListOf<Double>()
 
     fun addNoteOn(timeInMs: Double) {
         noteOnsTimesInMs.add(timeInMs)
-        nOfPlays += 1;
+        nOfPlays += 1
     }
 
     fun getNOfPlays(): Int {
-        return nOfPlays;
+        return nOfPlays
     }
 
     override fun toString(): String {
@@ -81,7 +81,7 @@ fun convertMidiToNoteTracks(music: Midi1Music, bpm: Double = 100.0): HashMap<Str
                     val noteName = gmDrumMap.getOrDefault(noteNumber.toInt(), "No name")
 
                     val noteTrack = noteTracks.getOrDefault(noteName, NoteTrack())
-                    noteTrack.addNoteOn(culTime);
+                    noteTrack.addNoteOn(culTime)
                     noteTracks[noteName] = noteTrack
                 }
                 Log.d(
@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity() {
         val music = Midi1Music()
         music.read(bytes)
 
-        val noteTracks = convertMidiToNoteTracks(music);
+        val noteTracks = convertMidiToNoteTracks(music)
 
         for ((noteName, noteTrack) in noteTracks) {
             Log.d("Note data", "Note: $noteName, $noteTrack")
