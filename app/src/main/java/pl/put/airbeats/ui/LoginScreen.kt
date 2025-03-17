@@ -26,6 +26,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pl.put.airbeats.R
 import pl.put.airbeats.ui.theme.AirBeatsTheme
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.toObject
+import com.google.firebase.Firebase
 
 @Composable
 fun LoginScreen(userToken: String
@@ -39,11 +43,23 @@ fun LoginScreen(userToken: String
         .padding(top = 20.dp)
         ,verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        val db = Firebase.firestore
+
         var username by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
 
         fun login() {
             // TODO
+            db.collection("users")
+                .get()
+                .addOnSuccessListener { result ->
+                    for (document in result) {
+                        Log.d(TAG, "${document.id} => ${document.data}")
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.w(TAG, "Error getting documents.", exception)
+                }
             Log.d("AirBeats","username: $username")
             Log.d("AirBeats","password: $password")
             updateUserToken(userToken)
