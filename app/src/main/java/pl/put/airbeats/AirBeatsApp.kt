@@ -18,11 +18,7 @@ import pl.put.airbeats.ui.theme.AirBeatsTheme
 fun AirBeatsApp() {
     var currentScreen by rememberSaveable { mutableStateOf("Login") }
     var userToken by rememberSaveable { mutableStateOf("") }
-    if(userToken == "") {
-        currentScreen = "Login"
-    }else{
-        currentScreen = "Main"
-    }
+    currentScreen = if(userToken == "") "Login" else "Main"
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         when(currentScreen) {
             "Login" -> LoginScreen(userToken

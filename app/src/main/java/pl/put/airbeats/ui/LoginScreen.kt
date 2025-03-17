@@ -46,11 +46,14 @@ fun LoginScreen(userToken: String
             // TODO
             Log.d("AirBeats","username: $username")
             Log.d("AirBeats","password: $password")
+            updateUserToken(userToken)
+            Log.d("AirBeats","userToken: $userToken")
         }
         fun register() {
             // TODO
             Log.d("AirBeats","username: $username")
             Log.d("AirBeats","password: $password")
+            Log.d("AirBeats","userToken: $userToken")
         }
 
         Image(painter = painterResource(R.drawable.temporary_logo)
