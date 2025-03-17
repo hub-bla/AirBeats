@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "438974179128",
+    "project_id": "air-beats-app",
+    "storage_bucket": "air-beats-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:438974179128:android:f0da8846ca074f09e5c3cd",
+        "android_client_info": {
+          "package_name": "pl.put.airbeats"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPQbAjiAc06WAqTF278MT-j3rGBbmXFKs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
