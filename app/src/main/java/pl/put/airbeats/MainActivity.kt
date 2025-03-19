@@ -1,10 +1,13 @@
 package pl.put.airbeats
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -12,8 +15,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import dev.atsushieno.ktmidi.Midi1Music
 import dev.atsushieno.ktmidi.read
+import pl.put.airbeats.bt.BluetoothManager
 import pl.put.airbeats.ui.theme.AirBeatsTheme
 
 val gmDrumMap = hashMapOf(
@@ -97,18 +103,35 @@ fun convertMidiToNoteTracks(music: Midi1Music, bpm: Double = 100.0): HashMap<Str
 
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val bytes = assets.open("output2.mid").readBytes().toList()
-        val music = Midi1Music()
-        music.read(bytes)
 
-        val noteTracks = convertMidiToNoteTracks(music)
+//            
+//            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+//
+//                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1001)
+//            } else {
+//
+//                val bt = BluetoothManager()
+//                bt.connectToDevice("airdrums")
+//                val data = bt.receiveData() ?: "data"
+//                Log.d("TAG", data)
+//            }
 
-        for ((noteName, noteTrack) in noteTracks) {
-            Log.d("Note data", "Note: $noteName, $noteTrack")
-        }
+
+//        val bytes = assets.open("output2.mid").readBytes().toList()
+//        val music = Midi1Music()
+//        music.read(bytes)
+//
+//        val noteTracks = convertMidiToNoteTracks(music)
+//
+//        for ((noteName, noteTrack) in noteTracks) {
+//            Log.d("Note data", "Note: $noteName, $noteTrack")
+//        }
+
+
 
         enableEdgeToEdge()
 
