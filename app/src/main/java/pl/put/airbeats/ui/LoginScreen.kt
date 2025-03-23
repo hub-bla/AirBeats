@@ -53,8 +53,8 @@ fun LoginScreen(
             .verticalScroll(rememberScrollState())
             .padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        var email by remember { mutableStateOf("") }
-        var password by remember { mutableStateOf("") }
+        var email by remember { mutableStateOf("marik@test.com") }
+        var password by remember { mutableStateOf("marik123") }
         var passwordVisible by remember { mutableStateOf(false) }
         fun login() {
             if (email.isEmpty() || password.isEmpty()) {

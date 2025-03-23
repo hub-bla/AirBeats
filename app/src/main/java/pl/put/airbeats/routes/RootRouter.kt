@@ -4,11 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.ui.HomeScreen
+import pl.put.airbeats.ui.LevelsScreen
 import pl.put.airbeats.ui.LoginScreen
 
 @Composable
@@ -24,6 +26,9 @@ fun RootRouter() {
         }
         composable(route = Screen.Login.route) {
             LoginScreen(Firebase.auth, navController)
+        }
+        composable(route = Screen.Levels.route) {
+            LevelsScreen()
         }
     }
 }

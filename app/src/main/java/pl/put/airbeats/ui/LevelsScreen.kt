@@ -10,20 +10,31 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.navigation.NavController
-import pl.put.airbeats.LocalUser
-import pl.put.airbeats.routes.Screen
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
 @Composable
-fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
-    val userState = LocalUser.current
+fun LevelsScreen(modifier: Modifier = Modifier) {
+    // variable that after being changes through button it displays correct songs from the levels
+    var difficulty = remember { mutableStateOf("") }
 
-    if (userState.value == "") {
-        navController.navigate(Screen.Login.route)
+
+    when (difficulty.value) {
+        "" -> SelectDifficulty(onDifficultySelected = { newDifficulty ->
+            difficulty.value = newDifficulty
+        })
+
+        else -> SongsInDifficulty(difficulty)
     }
+
+}
+
+
+@Composable
+fun SelectDifficulty(onDifficultySelected: (String) -> Unit, modifier: Modifier = Modifier) {
     Scaffold { paddingValues ->
         Column(
             modifier = modifier
@@ -33,27 +44,31 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Streak: ")
+            Text("Select difficulty")
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {navController.navigate(Screen.Levels.route)}) {
-                Text("Play")
+                onClick = { onDifficultySelected("easy") }) {
+                Text("Easy")
             }
 
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {}) {
-                Text("Game History")
+                onClick = {onDifficultySelected("medium") }) {
+                Text("Medium")
             }
 
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {}) {
-                Text("Settings")
+                onClick = {onDifficultySelected("hard")}) {
+                Text("Hard")
             }
         }
 
     }
+}
 
-
+@Composable
+fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Modifier) {
+    // need to fetch data from firestore
+    Text("Songs here")
 }
