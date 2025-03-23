@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.google.firebase.FirebaseApp
 import pl.put.airbeats.routes.RootRouter
 import pl.put.airbeats.ui.theme.AirBeatsTheme
 import pl.put.airbeats.utils.midi.MidiReader
@@ -23,6 +24,7 @@ val LocalUser = compositionLocalOf<MutableState<String>> { mutableStateOf("") }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val midiReader = MidiReader()
         midiReader.read(assets.open("output2.mid"))
 

@@ -34,9 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import pl.put.airbeats.R
 import pl.put.airbeats.ui.theme.AirBeatsTheme
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
 
