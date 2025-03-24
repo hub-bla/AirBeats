@@ -33,8 +33,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.Firebase
 import pl.put.airbeats.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
 

@@ -93,7 +93,6 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
                 }
 
                 songs.value = fetchedSongs
-
             }
 
     }
