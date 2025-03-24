@@ -1,6 +1,5 @@
 package pl.put.airbeats.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,7 +21,6 @@ import com.google.firebase.firestore.firestore
 
 @Composable
 fun LevelsScreen(modifier: Modifier = Modifier) {
-    // variable that after being changes through button it displays correct songs from the levels
     var difficulty = remember { mutableStateOf("") }
 
 
@@ -79,7 +77,6 @@ data class SongData(
 
 @Composable
 fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Modifier) {
-    // need to fetch data from firestore
     var songs = remember { mutableStateOf<List<SongData>>(emptyList()) }
     LaunchedEffect(difficulty.value) {
         val db = Firebase.firestore
@@ -106,9 +103,15 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        songs.value.forEach { song ->
-            Song(song.songName, song.midiLink, song.audioLink)
+        if (songs.value.isEmpty()) {
+            LoadingScreen()
+            return
+        } else {
+            songs.value.forEach { song ->
+                Song(song.songName, song.midiLink, song.audioLink)
+            }
         }
+
     }
 }
 

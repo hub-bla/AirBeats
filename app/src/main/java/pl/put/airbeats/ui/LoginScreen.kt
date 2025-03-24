@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import pl.put.airbeats.R
-import pl.put.airbeats.ui.theme.AirBeatsTheme
 import com.google.firebase.auth.FirebaseAuth
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
@@ -47,21 +47,24 @@ fun LoginScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .wrapContentSize(Alignment.TopCenter)
+//            .wrapContentSize(Alignment.TopCenter)
             .verticalScroll(rememberScrollState())
-            .padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        var isLoading by remember { mutableStateOf(false) }
         var email by remember { mutableStateOf("marik@test.com") }
         var password by remember { mutableStateOf("marik123") }
         var passwordVisible by remember { mutableStateOf(false) }
-        fun login() {
+
+        val login by rememberUpdatedState(newValue = {
             if (email.isEmpty() || password.isEmpty()) {
-                return
+                return@rememberUpdatedState
             }
-            Log.d("AirBeats", "username: $email")
-            Log.d("AirBeats", "password: $password")
+            isLoading = true
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
+                    isLoading = false
                     if (task.isSuccessful) {
                         // Sign in success, update UI with the signed-in user's information
                         Log.d("AirBeats", "signInWithEmail:success")
@@ -74,17 +77,19 @@ fun LoginScreen(
                         Log.w("AirBeats", "signInWithEmail:failure", task.exception)
                     }
                 }
-        }
+        })
 
-        fun register() {
+        val register by rememberUpdatedState(newValue = {
             if (email.isEmpty() || password.isEmpty()) {
-                return
+                return@rememberUpdatedState
             }
             Log.d("AirBeats", "username: $email")
             Log.d("AirBeats", "password: $password")
             // Email and password requirements TODO
+            isLoading = true
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
+                    isLoading = false
                     if (task.isSuccessful) {
                         // Sign in success, update UI with the signed-in user's information
                         Log.d("AirBeats", "createUserWithEmail:success")
@@ -97,7 +102,7 @@ fun LoginScreen(
                         Log.w("AirBeats", "createUserWithEmail:failure", task.exception)
                     }
                 }
-        }
+        })
 
         Image(
             painter = painterResource(R.drawable.temporary_logo), "logo"
@@ -129,19 +134,31 @@ fun LoginScreen(
             }
         )
 
-        Row(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally),
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Button(onClick = ::login) {
-                Text("Login")
-            }
+        if (isLoading) {
+            LoadingScreen()
+        }
+        else {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Button(
+                    onClick = { login() },
+                    enabled = !isLoading
+                ) {
+                    Text("Login")
+                }
 
-            Button(onClick = ::register) {
-                Text("Register")
+                Button(
+                    onClick = { register() },
+                    enabled = !isLoading
+                ) {
+                    Text("Register")
+                }
             }
         }
+
     }
 }
 
