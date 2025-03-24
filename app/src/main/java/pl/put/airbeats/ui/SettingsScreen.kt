@@ -1,29 +1,25 @@
 package pl.put.airbeats.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
 @Composable
-fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
-    val userState = LocalUser.current
-
-    if (userState.value == "") {
-        navController.navigate(Screen.Login.route)
-    }
+fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) {
     Scaffold { paddingValues ->
         Column(
             modifier = modifier
@@ -33,27 +29,21 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Streak: ")
-            Button(
-                modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {navController.navigate(Screen.Levels.route)}) {
-                Text("Play")
-            }
-
-            Button(
-                modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {}) {
-                Text("Game History")
-            }
-
-            Button(
-                modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {navController.navigate(Screen.Settings.route)}) {
-                Text("Settings")
-            }
+            LogoutButton(navController)
         }
-
     }
+}
 
-
+@Composable
+fun LogoutButton(navController: NavController) {
+    val userState = LocalUser.current
+    fun logoutUser() {
+        Firebase.auth.signOut()
+        userState.value = ""
+        Log.d("LogoutButton", userState.value)
+        navController.navigate(Screen.Login.route)
+    }
+    Button(onClick = ::logoutUser) {
+        Text("Log out")
+    }
 }

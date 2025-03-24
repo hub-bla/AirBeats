@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -30,15 +30,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.google.firebase.Firebase
 import pl.put.airbeats.R
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
+import pl.put.airbeats.ui.components.ErrorComponent
+import pl.put.airbeats.ui.components.Loading
 
 
 @Composable
@@ -55,6 +54,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         var isLoading by remember { mutableStateOf(false) }
+        var error by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("marik@test.com") }
         var password by remember { mutableStateOf("marik123") }
         var passwordVisible by remember { mutableStateOf(false) }
@@ -77,6 +77,7 @@ fun LoginScreen(
                     } else {
                         // If sign in fails, display a message to the user.
                         Log.w("AirBeats", "signInWithEmail:failure", task.exception)
+                        error = "Your login credentials don't match an account in our system."
                     }
                 }
         })
@@ -102,6 +103,7 @@ fun LoginScreen(
                     } else {
                         // If sign in fails, display a message to the user.
                         Log.w("AirBeats", "createUserWithEmail:failure", task.exception)
+                        error = task.exception?.message.toString()
                     }
                 }
         })
@@ -109,6 +111,15 @@ fun LoginScreen(
         Image(
             painter = painterResource(R.drawable.temporary_logo), "logo"
         )
+
+        if (error != "") {
+            ErrorComponent(
+                error,
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth(0.6f)
+            )
+        }
 
         TextField(
             value = email,
@@ -137,31 +148,30 @@ fun LoginScreen(
         )
 
         if (isLoading) {
-            LoadingScreen()
+            Loading()
+            return
         }
-        else {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally),
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Button(
+                onClick = { login() },
+                enabled = !isLoading
             ) {
-                Button(
-                    onClick = { login() },
-                    enabled = !isLoading
-                ) {
-                    Text("Login")
-                }
+                Text("Login")
+            }
 
-                Button(
-                    onClick = { register() },
-                    enabled = !isLoading
-                ) {
-                    Text("Register")
-                }
+            Button(
+                onClick = { register() },
+                enabled = !isLoading
+            ) {
+                Text("Register")
             }
         }
-
     }
+
 }
 
 //@Preview

@@ -39,7 +39,6 @@ class MainActivity : ComponentActivity() {
 
                 CompositionLocalProvider(LocalUser provides userState) {
                     LocalUser.current.value = Firebase.auth.currentUser?.uid.toString()
-
                     RootRouter()
                 }
 //                    AirBeatsApp(Firebase.auth)

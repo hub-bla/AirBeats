@@ -1,4 +1,4 @@
-package pl.put.airbeats.ui
+package pl.put.airbeats.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 
 @Composable
-fun LoadingScreen() {
+fun Loading() {
     val infiniteTransition = rememberInfiniteTransition()
     val angle =  infiniteTransition.animateFloat(
         initialValue = 0f,

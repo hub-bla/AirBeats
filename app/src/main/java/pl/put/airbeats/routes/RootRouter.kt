@@ -1,5 +1,6 @@
 package pl.put.airbeats.routes
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -11,14 +12,17 @@ import pl.put.airbeats.LocalUser
 import pl.put.airbeats.ui.HomeScreen
 import pl.put.airbeats.ui.LevelsScreen
 import pl.put.airbeats.ui.LoginScreen
+import pl.put.airbeats.ui.SettingsScreen
 
 @Composable
 fun RootRouter() {
     val navController = rememberNavController()
     val userState = LocalUser.current
+    val isLoggedIn = Firebase.auth.currentUser?.uid == null || userState.value == ""
+
     NavHost(
         navController = navController,
-        startDestination = if (userState.value == "") Screen.Login.route else Screen.Main.route
+        startDestination = if (isLoggedIn) Screen.Login.route else Screen.Main.route
     ) {
         composable(route = Screen.Main.route) {
             HomeScreen(navController, Modifier)
@@ -28,6 +32,9 @@ fun RootRouter() {
         }
         composable(route = Screen.Levels.route) {
             LevelsScreen()
+        }
+        composable(route = Screen.Settings.route) {
+            SettingsScreen(navController)
         }
     }
 }

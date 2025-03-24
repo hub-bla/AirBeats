@@ -1,5 +1,6 @@
 package pl.put.airbeats.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -18,11 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
+import pl.put.airbeats.ui.components.ErrorComponent
+import pl.put.airbeats.ui.components.Loading
 
 @Composable
 fun LevelsScreen(modifier: Modifier = Modifier) {
     var difficulty = remember { mutableStateOf("") }
-
 
     when (difficulty.value) {
         "" -> SelectDifficulty(onDifficultySelected = { newDifficulty ->
@@ -78,6 +80,8 @@ data class SongData(
 @Composable
 fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Modifier) {
     var songs = remember { mutableStateOf<List<SongData>>(emptyList()) }
+    var isLoading = remember { mutableStateOf(true) }
+    var error = remember { mutableStateOf("") }
     LaunchedEffect(difficulty.value) {
         val db = Firebase.firestore
 
@@ -93,6 +97,11 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
                 }
 
                 songs.value = fetchedSongs
+                isLoading.value = false
+            }.addOnFailureListener {
+                Log.d("Firestore failure", "couldnt fetch data")
+                isLoading.value = false
+                error.value = "Couldn't fetch songs data."
             }
 
     }
@@ -102,13 +111,21 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (songs.value.isEmpty()) {
-            LoadingScreen()
+        if (isLoading.value) {
+            Loading()
             return
-        } else {
-            songs.value.forEach { song ->
-                Song(song.songName, song.midiLink, song.audioLink)
-            }
+        }
+
+        if (error.value != "") {
+            ErrorComponent(error.value)
+        }
+
+        if (songs.value.isEmpty()) {
+            Text("No songs were found")
+        }
+
+        songs.value.forEach { song ->
+            Song(song.songName, song.midiLink, song.audioLink)
         }
 
     }
