@@ -3,6 +3,10 @@ package pl.put.airbeats.utils.midi
 import android.util.Log
 import dev.atsushieno.ktmidi.Midi1Music
 import dev.atsushieno.ktmidi.read
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import java.io.InputStream
 
 val gmDrumMap = hashMapOf(
@@ -23,13 +27,17 @@ val gmDrumMap = hashMapOf(
 
 class MidiReader {
     var noteTracks = HashMap<String, NoteTrack>()
+    val client = HttpClient()
 
-    fun read(fileStream: InputStream) : HashMap<String, NoteTrack>  {
-        val bytes = fileStream.readBytes().toList()
+
+    suspend fun read(url: String, bpm: Int): HashMap<String, NoteTrack> {
+        val response: HttpResponse = client.get(url)
+        val bytes = response.bodyAsBytes().toList()
+
         val music = Midi1Music()
         music.read(bytes)
 
-        noteTracks = convertMidiToNoteTracks(music)
+        noteTracks = convertMidiToNoteTracks(music, bpm)
 
         for ((noteName, noteTrack) in noteTracks) {
             Log.d("Note data", "Note: $noteName, $noteTrack")
@@ -40,7 +48,7 @@ class MidiReader {
 
     // Note: bpm should be in file name or sent as metadata from api
     // following default value is just for testing purposes
-    private fun convertMidiToNoteTracks(music: Midi1Music, bpm: Double = 100.0): HashMap<String, NoteTrack> {
+    private fun convertMidiToNoteTracks(music: Midi1Music, bpm: Int): HashMap<String, NoteTrack> {
         val noteTracks = HashMap<String, NoteTrack>()
         val ppqn = music.deltaTimeSpec.toDouble()
         val MILISECONDS_IN_MIN = 60000.0
@@ -48,7 +56,7 @@ class MidiReader {
         var culTime = 0.0
 
         music.tracks.forEachIndexed { index, track ->
-            Log.d("MidiTrack", "Track $index: ${track}")
+            Log.d("MidiTrack", "Track $index: ${track.events}")
 
             track.events.forEach { event ->
                 val type = when (event.message.statusCode.toInt() and 0xF0) {
@@ -64,7 +72,8 @@ class MidiReader {
                 if (type == "Note On" || type == "Note Off") { // Note On event
                     val noteNumber = event.message.msb // First data byte: note number
 //                val velocity = event.message.lsb  // Second data byte: velocity
-                    val time = event.deltaTime.toDouble() * (MILISECONDS_IN_MIN / (ppqn * bpm))
+                    val time =
+                        event.deltaTime.toDouble() * (MILISECONDS_IN_MIN / (ppqn * bpm.toDouble()))
                     culTime += time
                     if (type == "Note On") {
                         val noteName = gmDrumMap.getOrDefault(noteNumber.toInt(), "No name")

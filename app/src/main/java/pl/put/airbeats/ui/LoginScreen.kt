@@ -2,13 +2,14 @@ package pl.put.airbeats.ui
 
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -30,7 +31,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import pl.put.airbeats.R
 import com.google.firebase.auth.FirebaseAuth
@@ -45,10 +48,10 @@ fun LoginScreen(
     auth: FirebaseAuth, navController: NavController, modifier: Modifier = Modifier
 ) {
     val userState = LocalUser.current
+
     Column(
         modifier = modifier
             .fillMaxSize()
-//            .wrapContentSize(Alignment.TopCenter)
             .verticalScroll(rememberScrollState())
             .padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -57,7 +60,8 @@ fun LoginScreen(
         var error by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("marik@test.com") }
         var password by remember { mutableStateOf("marik123") }
-        var passwordVisible by remember { mutableStateOf(false) }
+        var repeatedPassword by remember { mutableStateOf("") }
+        var formType by remember { mutableStateOf("login") }
 
         val login by rememberUpdatedState(newValue = {
             if (email.isEmpty() || password.isEmpty()) {
@@ -84,6 +88,10 @@ fun LoginScreen(
 
         val register by rememberUpdatedState(newValue = {
             if (email.isEmpty() || password.isEmpty()) {
+                return@rememberUpdatedState
+            }
+            if (password != repeatedPassword) {
+                error = "Passwords don't match"
                 return@rememberUpdatedState
             }
             Log.d("AirBeats", "username: $email")
@@ -121,69 +129,147 @@ fun LoginScreen(
             )
         }
 
-        TextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions()
-        )
-
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailingIcon = {
-                val image = Icons.Filled.Search
-                // Please provide localized description for accessibility services
-                val description = if (passwordVisible) "Hide password" else "Show password"
-
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, description)
-                }
-            }
-        )
-
         if (isLoading) {
             Loading()
             return
         }
-        Row(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally),
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Button(
-                onClick = { login() },
-                enabled = !isLoading
-            ) {
-                Text("Login")
-            }
 
-            Button(
-                onClick = { register() },
-                enabled = !isLoading
-            ) {
-                Text("Register")
-            }
+        when (formType) {
+            "login" -> Login(
+                email,
+                password,
+                { newEmailVal -> email = newEmailVal },
+                { newPasswordVal -> password = newPasswordVal },
+                isLoading,
+                login,
+                { formType = "register" }
+            )
+
+            "register" -> Register(
+                email,
+                password,
+                repeatedPassword,
+                { newEmailVal -> email = newEmailVal },
+                { newPasswordVal -> password = newPasswordVal },
+                { newRepPasswordVal -> repeatedPassword = newRepPasswordVal },
+                isLoading,
+                register,
+                { formType = "login" }
+            )
         }
     }
 
 }
 
-//@Preview
-//    (
-//    showBackground = true, showSystemUi = true
-//)
-//@Composable
-//fun PreviewLogin() {
-//    AirBeatsTheme {
-//        LoginScreen(
-//            auth = Firebase.auth,
-//            modifier = Modifier
-//        )
-//    }
-//}
+@Composable
+fun PasswordInput(label:String, value:String, changeValue: (String) -> Unit) {
+    var passwordVisible = remember { mutableStateOf(false) }
+    TextField(
+        value = value,
+        onValueChange = { changeValue(it) },
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = if (passwordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        trailingIcon = {
+            val image = Icons.Filled.Search
+            // Please provide localized description for accessibility services
+            val description = if (passwordVisible.value) "Hide password" else "Show password"
+
+            IconButton(onClick = { passwordVisible.value = !passwordVisible.value }) {
+                Icon(imageVector = image, description)
+            }
+        }
+    )
+}
+
+
+@Composable
+fun SignInForm(
+    email: String,
+    password: String,
+    changeEmailVal: (String) -> Unit,
+    changePasswordVal: (String) -> Unit,
+) {
+    TextField(
+        value = email,
+        onValueChange = { changeEmailVal(it) },
+        label = { Text("Email") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions()
+    )
+
+    PasswordInput("Password", password, changePasswordVal)
+}
+
+
+@Composable
+fun Login(
+    email: String,
+    password: String,
+    changeEmailVal: (String) -> Unit,
+    changePasswordVal: (String) -> Unit,
+    isLoading: Boolean,
+    handleLogin: () -> Unit,
+    changeToRegisterForm: () -> Unit
+) {
+    SignInForm(
+        email,
+        password,
+        changeEmailVal,
+        changePasswordVal,
+    )
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Button(
+            onClick = { handleLogin() },
+            enabled = !isLoading
+        ) {
+            Text("Login")
+        }
+        Text(
+            text = "Create account",
+            modifier = Modifier.clickable { changeToRegisterForm() },
+            fontSize = 12.sp,
+            textDecoration = TextDecoration.Underline
+        )
+    }
+
+}
+
+@Composable
+fun Register(
+    email: String,
+    password: String,
+    repeatedPassword:String,
+    changeEmailVal: (String) -> Unit,
+    changePasswordVal: (String) -> Unit,
+    changeRepPassVal: (String) -> Unit,
+    isLoading: Boolean,
+    handleRegister: () -> Unit,
+    changeToLoginForm: () -> Unit
+) {
+    SignInForm(
+        email,
+        password,
+        changeEmailVal,
+        changePasswordVal,
+    )
+
+    PasswordInput("Repeat password", repeatedPassword, changeRepPassVal)
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Button(
+            onClick = { handleRegister() },
+            enabled = !isLoading
+        ) {
+            Text("Register")
+        }
+
+        Text(
+            text = "Sign In",
+            modifier = Modifier.clickable { changeToLoginForm() },
+            fontSize = 12.sp,
+            textDecoration = TextDecoration.Underline
+        )
+    }
+}

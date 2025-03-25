@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.runBlocking
 import pl.put.airbeats.ui.components.ErrorComponent
 import pl.put.airbeats.ui.components.Loading
+import pl.put.airbeats.utils.midi.MidiReader
 
 @Composable
 fun LevelsScreen(modifier: Modifier = Modifier) {
@@ -103,7 +105,7 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
                 songs.value = fetchedSongs
                 isLoading.value = false
             }.addOnFailureListener {
-                Log.d("Firestore failure", "couldnt fetch data")
+                Log.d("Firestore failure", "couldn't fetch data")
                 isLoading.value = false
                 error.value = "Couldn't fetch songs data."
             }
@@ -137,7 +139,13 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
 
 @Composable
 fun Song(songName: String, midiLink: String, audioLink: String, bpm: Int) {
-    Button(onClick = { }) { // pass midiLink and audioLink to the actual game screen
+    Button(onClick = {
+        runBlocking {
+            val midi = MidiReader()
+            midi.read(midiLink, bpm)
+        }
+
+    }) { // pass midiLink and audioLink to the actual game screen
         Text(songName)
     }
 

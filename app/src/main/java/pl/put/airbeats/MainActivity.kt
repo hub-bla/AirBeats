@@ -26,8 +26,6 @@ val LocalUser = compositionLocalOf<MutableState<String>> { mutableStateOf("") }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val midiReader = MidiReader()
-        midiReader.read(assets.open("output2.mid"))
 
         enableEdgeToEdge()
 
