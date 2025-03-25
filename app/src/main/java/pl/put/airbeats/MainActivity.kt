@@ -34,7 +34,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             AirBeatsTheme {
 //                Scaffold(modifier = Modifier.fillMaxSize()) {
-
                 val userState = remember { mutableStateOf("") }
 
                 CompositionLocalProvider(LocalUser provides userState) {

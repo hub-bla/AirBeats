@@ -1,5 +1,7 @@
 package pl.put.airbeats.ui
 
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -74,7 +76,8 @@ fun SelectDifficulty(onDifficultySelected: (String) -> Unit, modifier: Modifier 
 data class SongData(
     val songName: String,
     val midiLink: String,
-    val audioLink: String
+    val audioLink: String,
+    val bpm: Int
 )
 
 @Composable
@@ -92,8 +95,9 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
                     val songName = document.id
                     val midiLink = document.getString("midi").toString()
                     val audioLink = document.getString("audio").toString()
+                    val bpm = document.getLong("bpm")!!.toInt()
 
-                    SongData(songName, midiLink, audioLink)
+                    SongData(songName, midiLink, audioLink, bpm)
                 }
 
                 songs.value = fetchedSongs
@@ -125,16 +129,15 @@ fun SongsInDifficulty(difficulty: MutableState<String>, modifier: Modifier = Mod
         }
 
         songs.value.forEach { song ->
-            Song(song.songName, song.midiLink, song.audioLink)
+            Song(song.songName, song.midiLink, song.audioLink, song.bpm)
         }
 
     }
 }
 
 @Composable
-fun Song(songName: String, midiLink: String, audioLink: String) {
-
-    Button(onClick = {}) { // pass midiLink and audioLink to the actual game screen
+fun Song(songName: String, midiLink: String, audioLink: String, bpm: Int) {
+    Button(onClick = { }) { // pass midiLink and audioLink to the actual game screen
         Text(songName)
     }
 
