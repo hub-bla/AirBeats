@@ -4,10 +4,8 @@ import android.util.Log
 import dev.atsushieno.ktmidi.Midi1Music
 import dev.atsushieno.ktmidi.read
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import java.io.InputStream
 
 val gmDrumMap = hashMapOf(
     35 to "Acoustic Bass Drum", 36 to "Bass Drum 1", 37 to "Side Stick", 38 to "Acoustic Snare",
