@@ -73,16 +73,13 @@ fun SelectDifficulty(onDifficultySelected: (String) -> Unit, modifier: Modifier 
     }
 }
 
-//data class SongData(
-//    val songName: String,
-//    val midiLink: String,
-//    val audioLink: String,
-//    val bpm: Int
-//)
-
 @Composable
-fun SongsInDifficulty(navController: NavController, difficulty: MutableState<String>, modifier: Modifier = Modifier) {
-    var songs = remember { mutableStateOf<List<SongData>>(emptyList()) }
+fun SongsInDifficulty(
+    navController: NavController,
+    difficulty: MutableState<String>,
+    modifier: Modifier = Modifier
+) {
+    var songs = remember { mutableStateOf<List<String>>(emptyList()) }
     var isLoading = remember { mutableStateOf(true) }
     var error = remember { mutableStateOf("") }
     LaunchedEffect(difficulty.value) {
@@ -92,12 +89,12 @@ fun SongsInDifficulty(navController: NavController, difficulty: MutableState<Str
             .get()
             .addOnSuccessListener { result ->
                 val fetchedSongs = result.map { document ->
-                    val songName = document.id
-                    val midiLink = document.getString("midi").toString()
-                    val audioLink = document.getString("audio").toString()
-                    val bpm = document.getLong("bpm")!!.toInt()
-
-                    SongData(songName, midiLink, audioLink, bpm)
+                    document.id
+//                    val midiLink = document.getString("midi").toString()
+//                    val audioLink = document.getString("audio").toString()
+//                    val bpm = document.getLong("bpm")!!.toInt()
+//
+//                    SongData(songName, midiLink, audioLink, bpm)
                 }
 
                 songs.value = fetchedSongs
@@ -129,17 +126,17 @@ fun SongsInDifficulty(navController: NavController, difficulty: MutableState<Str
         }
 
         songs.value.forEach { song ->
-            Song(navController, song.songName, song.midiLink, song.audioLink, song.bpm, difficulty.value)
+            Song(navController, song, difficulty.value)
         }
 
     }
 }
 
 @Composable
-fun Song(navController: NavController, songName: String, midiLink: String, audioLink: String, bpm: Int, difficulty: String) {
+fun Song(navController: NavController, songName: String, difficulty: String) {
     Button(onClick = {
         navController.navigate("${Screen.Game.route}/$songName/$difficulty")
-    }) { // pass midiLink and audioLink to the actual game screen
+    }) {
         Text(songName)
     }
 

@@ -10,8 +10,11 @@ import androidx.navigation.navArgument
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import pl.put.airbeats.LocalUser
-import pl.put.airbeats.ui.*
-
+import pl.put.airbeats.ui.GameScreen
+import pl.put.airbeats.ui.HomeScreen
+import pl.put.airbeats.ui.LevelsScreen
+import pl.put.airbeats.ui.LoginScreen
+import pl.put.airbeats.ui.SettingsScreen
 
 @Composable
 fun RootRouter() {
@@ -35,21 +38,14 @@ fun RootRouter() {
         composable(route = Screen.Settings.route) {
             SettingsScreen(navController)
         }
-//        composable(route = "${Screen.Game.route}/{songName}/{midiLink}/{audioLink}/{bpm}",
-        composable(route = "${Screen.Game.route}/{songName}/{difficulty}",
+        composable(
+            route = "${Screen.Game.route}/{songName}/{difficulty}",
             arguments = listOf(
-                navArgument("songName") {type = NavType.StringType},
-                navArgument("difficulty") {type = NavType.StringType},
-//                navArgument("midiLink") {type = NavType.StringType},
-//                navArgument("audioLink") {type = NavType.StringType},
-//                navArgument("bpm") {type = NavType.IntType}
-            )){ backStackEntry ->
+                navArgument("songName") { type = NavType.StringType },
+                navArgument("difficulty") { type = NavType.StringType }
+            )) { backStackEntry ->
             val songName: String = backStackEntry.arguments?.getString("songName") ?: ""
             val difficulty: String = backStackEntry.arguments?.getString("difficulty") ?: ""
-//            val midiLink: String = backStackEntry.arguments?.getString("midiLink") ?: ""
-//            val audioLink: String = backStackEntry.arguments?.getString("audioLink") ?: ""
-//            val bpm: Int = backStackEntry.arguments?.getInt("bpm") ?: 0
-//            GameScreen(songName, midiLink, audioLink, bpm)
             GameScreen(songName, difficulty)
         }
     }
