@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -31,24 +32,33 @@ import pl.put.airbeats.utils.midi.NoteTrack
 @Composable
 fun GameScreen(songName: String, difficulty: String, modifier: Modifier = Modifier) {
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
+    var bpm = remember { mutableIntStateOf(0) }
     var audioLink = remember { mutableStateOf("") }
     var isPlaying = remember { mutableStateOf(false) }
 
     when(isPlaying.value) {
         false -> Menu(
             {newNoteTracks ->  noteTracks.value = newNoteTracks},
+            {newBpm ->  bpm.intValue = newBpm},
             {newAudioLink ->  audioLink.value = newAudioLink},
             songName,
             difficulty,
             {isPlaying.value = true},
             modifier)
 
-        true -> Game(audioLink.value, noteTracks.value)
+        true -> Game(audioLink.value, noteTracks.value, bpm.intValue)
     }
 }
 
 @Composable
-fun Menu(changeNoteTracks: (Map<String, NoteTrack>) -> Unit, changeAudioLink: (String) -> Unit, songName: String, difficulty: String, startGame: () -> Unit, modifier: Modifier = Modifier) {
+fun Menu(
+        changeNoteTracks: (Map<String, NoteTrack>) -> Unit,
+        changeBpm: (Int) -> Unit,
+        changeAudioLink: (String) -> Unit,
+        songName: String,
+        difficulty: String,
+        startGame: () -> Unit,
+        modifier: Modifier = Modifier) {
     var isLoading = remember { mutableStateOf(true) }
     var error = remember { mutableStateOf("") }
 
@@ -80,6 +90,7 @@ fun Menu(changeNoteTracks: (Map<String, NoteTrack>) -> Unit, changeAudioLink: (S
                     Log.d("Game", "Note Tracks loaded")
                     changeAudioLink(audioLink)
                     changeNoteTracks(noteTracks)
+                    changeBpm(bpm)
                 }
                 isLoading.value = false
             }.addOnFailureListener {
@@ -113,12 +124,16 @@ fun Menu(changeNoteTracks: (Map<String, NoteTrack>) -> Unit, changeAudioLink: (S
 }
 
 @Composable
-fun Game(audioLink: String, noteTrack: Map<String, NoteTrack>, modifier: Modifier = Modifier) {
-//        TODO game mechanic
+fun Game(
+        audioLink: String,
+        noteTracks: Map<String, NoteTrack>,
+        bpm: Int,
+        modifier: Modifier = Modifier,
+    ) {
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = {context ->
-             MyGLSurfaceView(context)
+             MyGLSurfaceView(context, noteTracks, bpm)
         }
     )
 }

@@ -6,16 +6,27 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 
 const val CORDS_PER_VERTEX = 3
-var squareCords = floatArrayOf(
-    -0.25f,  0.25f, 0.0f,      // top left
-    -0.25f, -0.25f, 0.0f,      // bottom left
-    0.25f, -0.25f, 0.0f,      // bottom right
-    -0.25f,  0.25f, 0.0f,      // top left
-    0.25f, -0.25f, 0.0f,      // bottom right
-    0.25f,  0.25f, 0.0f       // top right
-)
 
-class Tile {
+class Tile(tileWidth: Float, tileHeight: Float) {
+    private val squareCords: FloatArray
+
+    init {
+        val centerOffsetX = tileWidth/2f
+        val centerOffsetY = tileHeight/2f
+        val leftX = -centerOffsetX
+        val rightX = centerOffsetX
+        val topY = centerOffsetY
+        val bottomY = -centerOffsetY
+        squareCords = floatArrayOf(
+            leftX,  topY,   0.0f,      // top left
+            leftX,  bottomY,0.0f,      // bottom left
+            rightX, bottomY,0.0f,      // bottom right
+            leftX,  topY,   0.0f,      // top left
+            rightX, bottomY,0.0f,      // bottom right
+            rightX, topY,   0.0f       // top right
+        )
+    }
+
     // initialize vertex byte buffer for shape coordinates
     private val vertexBuffer: FloatBuffer =
         // (# of coordinate values * 4 bytes per float)
