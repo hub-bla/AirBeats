@@ -74,6 +74,58 @@ fun getPrimaryCalendarId(contentResolver: ContentResolver): Long {
     throw IllegalStateException("No calendars found on the device.")
 }
 
+
+fun createCalendarForRecurringEvent(
+    context: Context,
+    selectedDays: Set<Int>,
+    selectedHour: Int,
+    selectedMinute: Int
+) {
+    val calendarList = mutableListOf<Calendar>()
+    val contentResolver = context.contentResolver
+    val calendarId = getPrimaryCalendarId(contentResolver)
+    val calendarUri = CalendarContract.Events.CONTENT_URI
+
+    selectedDays.forEach { dayOfWeek ->
+
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_WEEK, dayOfWeek)
+            set(Calendar.HOUR_OF_DAY, selectedHour)
+            set(Calendar.MINUTE, selectedMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val values = ContentValues().apply {
+            put(
+                CalendarContract.Events.CALENDAR_ID,
+                calendarId
+            )
+            put(CalendarContract.Events.TITLE, "AirBeats Practice")
+            put(CalendarContract.Events.DTSTART, calendar.timeInMillis) // Start Time
+            put(CalendarContract.Events.DTEND, calendar.timeInMillis + 3600000) // 1 hour duration
+            put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+            put(CalendarContract.Events.HAS_ALARM, 1)
+
+            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+            val weekday = when (dayOfWeek) {
+                Calendar.SUNDAY -> "SU"
+                Calendar.MONDAY -> "MO"
+                Calendar.TUESDAY -> "TU"
+                Calendar.WEDNESDAY -> "WE"
+                Calendar.THURSDAY -> "TH"
+                Calendar.FRIDAY -> "FR"
+                Calendar.SATURDAY -> "SA"
+                else -> throw IllegalArgumentException("Invalid day of week")
+            }
+            put(CalendarContract.Events.RRULE, "FREQ=WEEKLY;BYDAY=$weekday")
+        }
+        calendarList.add(calendar)
+        contentResolver.insert(calendarUri, values)
+
+    }
+}
+
 fun checkAirBeatsPracticeEvents(context: Context): HashMap<String, MutableList<Event>> {
     val eventList = mutableListOf<Event>()
 
@@ -133,7 +185,10 @@ fun checkAirBeatsPracticeEvents(context: Context): HashMap<String, MutableList<E
             val calendar = Calendar.getInstance().apply { timeInMillis = eventStartTime }
             val dayName = SimpleDateFormat("EEEE", Locale.ENGLISH).format(calendar.time)
             val dayShortcut = SimpleDateFormat("EEE", Locale.ENGLISH).format(calendar.time)
-            val startTime = if (isAllDay) "All Day" else SimpleDateFormat("HH:mm", Locale.ENGLISH).format(calendar.time)
+            val startTime =
+                if (isAllDay) "All Day" else SimpleDateFormat("HH:mm", Locale.ENGLISH).format(
+                    calendar.time
+                )
 
             eventList.add(
                 Event(
@@ -166,19 +221,22 @@ fun updateAirBeatsEvents(
     events: List<Event>,
     daysToDelete: List<String>,
     daysToAdd: List<String>,
-    newStartTime: String
+    selectedHour: Int,
+    selectedMinute: Int
 ) {
+    val daysOfWeek = hashMapOf(
+        "Sunday" to Calendar.SUNDAY,
+        "Monday" to Calendar.MONDAY,
+        "Tuesday" to Calendar.TUESDAY,
+        "Wednesday" to Calendar.WEDNESDAY,
+        "Thursday" to Calendar.THURSDAY,
+        "Friday" to Calendar.FRIDAY,
+        "Saturday" to Calendar.SATURDAY,
+    )
     val contentResolver = context.contentResolver
     val calendarId = getPrimaryCalendarId(contentResolver)
 
     // Validate newStartTime format (HH:mm)
-    val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val validStartTime = try {
-        timeFormatter.parse(newStartTime)
-        newStartTime // If parsing is successful, return the original time string
-    } catch (e: Exception) {
-        throw IllegalArgumentException("Invalid time format. Expected HH:mm but got: $newStartTime")
-    }
 
     // Remove events belonging to days in daysToDelete from the calendar
     events.filter { it.dayName in daysToDelete }.forEach { event ->
@@ -192,67 +250,57 @@ fun updateAirBeatsEvents(
     // Update startTime for remaining events in the list
     val filteredEvents = events.filterNot { it.dayName in daysToDelete }
     for (event in filteredEvents) {
-        val updatedEvent = event.copy(startTime = validStartTime)
+        val dayOfWeek = daysOfWeek.get(event.dayName)!!
 
-        val values = ContentValues().apply {
-            put(CalendarContract.Events.DTSTART, updatedEvent.eventStartTime) // Updated start time
-            put(CalendarContract.Events.DTEND, updatedEvent.eventEndTime) // Update end time
+        val weekday = when (dayOfWeek) {
+            Calendar.SUNDAY -> "SU"
+            Calendar.MONDAY -> "MO"
+            Calendar.TUESDAY -> "TU"
+            Calendar.WEDNESDAY -> "WE"
+            Calendar.THURSDAY -> "TH"
+            Calendar.FRIDAY -> "FR"
+            Calendar.SATURDAY -> "SA"
+            else -> throw IllegalArgumentException("Invalid day of week")
         }
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_WEEK, dayOfWeek)
+            set(Calendar.HOUR_OF_DAY, selectedHour)
+            set(Calendar.MINUTE, selectedMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val values = ContentValues().apply {
+            put(
+                CalendarContract.Events.CALENDAR_ID,
+                calendarId
+            )
+            put(CalendarContract.Events.TITLE, "AirBeats Practice")
+            put(CalendarContract.Events.DTSTART, calendar.timeInMillis)
+            put(CalendarContract.Events.DTEND, calendar.timeInMillis + 3600000)
+            put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+            put(CalendarContract.Events.HAS_ALARM, 1)
 
+            put(CalendarContract.Events.RRULE, "FREQ=WEEKLY;BYDAY=$weekday")
+        }
         contentResolver.update(
             CalendarContract.Events.CONTENT_URI,
             values,
             "${CalendarContract.Events._ID} = ?",
-            arrayOf(updatedEvent.eventId.toString())
+            arrayOf(event.eventId.toString())
         )
     }
 
-    // Create new recurring events based on daysToAdd
-    for (day in daysToAdd) {
-        val dayShortcut = when (day) {
-            "Sunday" -> "SU"
-            "Monday" -> "MO"
-            "Tuesday" -> "TU"
-            "Wednesday" -> "WE"
-            "Thursday" -> "TH"
-            "Friday" -> "FR"
-            "Saturday" -> "SA"
-            else -> throw IllegalArgumentException("Invalid day: $day")
-        }
+    if (daysToAdd.isNotEmpty()) {
 
-        // Create recurring event for the specified day
-        val calendar = Calendar.getInstance().apply {
-            set(Calendar.DAY_OF_WEEK, getDayOfWeekFromShortcut(dayShortcut))
-            set(Calendar.HOUR_OF_DAY, validStartTime.substringBefore(":").toInt())
-            set(Calendar.MINUTE, validStartTime.substringAfter(":").toInt())
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-
-        // If the computed time is in the past, move it to the next week.
-        if (calendar.timeInMillis < System.currentTimeMillis()) {
-            calendar.add(Calendar.WEEK_OF_YEAR, 1)
-        }
-
-        val values = ContentValues().apply {
-            put(CalendarContract.Events.CALENDAR_ID, calendarId)
-            put(CalendarContract.Events.TITLE, "AirBeats Practice")
-            put(CalendarContract.Events.DTSTART, calendar.timeInMillis)
-            put(
-                CalendarContract.Events.DTEND,
-                calendar.timeInMillis + 3600000
-            ) // Assuming 1-hour duration
-            put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
-            put(CalendarContract.Events.HAS_ALARM, 1)
-
-            put(
-                CalendarContract.Events.RRULE,
-                "FREQ=WEEKLY;BYDAY=$dayShortcut"
-            ) // Set RRULE for recurring events
-        }
-
-        contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
+        val daysToAddCodes = daysToAdd.map { daysOfWeek.get(it)!! }.toSet()
+        createCalendarForRecurringEvent(
+            context,
+            daysToAddCodes,
+            selectedHour,
+            selectedMinute
+        )
     }
+
 }
 
 // Helper function to convert day shortcut (SU, MO, etc.) to Calendar constant
