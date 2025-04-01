@@ -42,6 +42,7 @@ import java.util.Calendar
 import kotlin.collections.component1
 import kotlin.collections.component2
 
+// TODO: Invalidate adding event to calendar that already exist at specific time and day
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CalendarForm(
@@ -75,6 +76,9 @@ fun CalendarForm(
     LaunchedEffect(Unit) {
         selectedDays = events.mapNotNull { daysOfWeek[it.dayName] }.toSet()
         if (time == "None") {
+            val calendar = Calendar.getInstance()
+            selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
+            selectedMinute = calendar.get(Calendar.MINUTE)
             return@LaunchedEffect
         }
         val (hours, minutes) = time.split(":")
@@ -110,7 +114,19 @@ fun CalendarForm(
             verticalArrangement = Arrangement.Center,
             horizontalArrangement = Arrangement.Center,
         ) {
-            daysOfWeek.entries.forEachIndexed { index, (dayName, calendarDay) ->
+            val sortedDays = daysOfWeek.entries.sortedBy {
+                when (it.value) {
+                    Calendar.MONDAY -> 0
+                    Calendar.TUESDAY -> 1
+                    Calendar.WEDNESDAY -> 2
+                    Calendar.THURSDAY -> 3
+                    Calendar.FRIDAY -> 4
+                    Calendar.SATURDAY -> 5
+                    Calendar.SUNDAY -> 6
+                    else -> 7
+                }
+            }
+            sortedDays.forEachIndexed { index, (dayName, calendarDay) ->
                 Row(modifier = Modifier.padding(8.dp)) {
                     Text(
                         text = dayName,

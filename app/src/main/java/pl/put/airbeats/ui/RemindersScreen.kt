@@ -1,36 +1,21 @@
 package pl.put.airbeats.ui
 
 import android.Manifest
-import android.app.TimePickerDialog
 import androidx.compose.runtime.*
-import android.content.ContentValues
-import android.content.Context
-import android.provider.CalendarContract
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
@@ -40,12 +25,6 @@ import pl.put.airbeats.ui.components.CalendarEventComponent
 import pl.put.airbeats.ui.components.CalendarForm
 import pl.put.airbeats.utils.Event
 import pl.put.airbeats.utils.checkAirBeatsPracticeEvents
-import pl.put.airbeats.utils.getPrimaryCalendarId
-import pl.put.airbeats.utils.updateAirBeatsEvents
-import java.util.Calendar
-import java.util.TimeZone
-import kotlin.collections.associate
-
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

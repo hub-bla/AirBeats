@@ -26,8 +26,8 @@ fun SuccessComponent(
     LaunchedEffect(Unit) {
         val delayTimeMs = (timeInMs.toDouble() / 100.0).toLong()
         while (barWidth > 0) {
-            delay(delayTimeMs) // Delay for 1 second
-            barWidth -= 0.01 // Decrease bar width by 0.05
+            delay(delayTimeMs)
+            barWidth -= 0.01
         }
 
     }

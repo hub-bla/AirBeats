@@ -21,8 +21,6 @@ import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import kotlinx.coroutines.delay
 import pl.put.airbeats.ui.components.SuccessComponent
 
 @Composable
@@ -30,9 +28,6 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
     val backStackEntry = navController.currentBackStackEntry
     val savedStateHandle = backStackEntry?.savedStateHandle
     var successMessage by remember { mutableStateOf("") }
-    var popupShown by remember { mutableStateOf(false) }
-    var popupState by remember { mutableIntStateOf(0) } // 0 -uinitialized 1-to show, 2-todelete
-    val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(savedStateHandle) {
         savedStateHandle?.get<String>("successMessage")?.let {
@@ -40,10 +35,6 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
             successMessage = it
         }
 
-    }
-
-    if (popupState == 2) {
-        successMessage = ""
     }
 
     val userState = LocalUser.current
@@ -82,18 +73,9 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 Text("Calendar Reminders")
             }
 
-
-
-
             Button(onClick = ::logoutUser) {
                 Text("Log out")
             }
-            LogoutButton(navController)
         }
     }
-}
-
-@Composable
-fun LogoutButton(navController: NavController) {
-
 }
