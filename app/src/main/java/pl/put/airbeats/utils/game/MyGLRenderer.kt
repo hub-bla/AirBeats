@@ -39,21 +39,21 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Set color with red, green, blue and alpha (opacity) values
         tileColor = floatArrayOf(0.118f, 0.663f, 0.933f, 1.0f)
 
-        val centerOfTileOnScreenTime = 2000f
+        val centerOfTileOnScreenTime = 1500f
         tileSpeed = 2f/centerOfTileOnScreenTime
 
-        val minTimeDifference = (60000f)/bpm
+        val defaultTimeDifference = (60000f)/bpm
 
         val numberOfColumns = 4
         val tileWidth = 2f / numberOfColumns
-        val tileHeight = (minTimeDifference * tileSpeed) * 0.95f // tile should be a little smaller than they could be so they could be distinguishable
+//        val tileHeight = (defaultTimeDifference * tileSpeed) * 0.95f // tile should be a little smaller than they could be so they could be distinguishable
         val tileWidthOffset = tileWidth / 2f
-        val tileHeightOffset = tileHeight / 2f
+//        val tileHeightOffset = tileHeight / 2f
 
         val startPositionXOffset = -1f + tileWidthOffset
-        val startPositionYOffset = 1f + tileHeightOffset
+//        val startPositionYOffset = 1f + tileHeightOffset
         for (i in 0..<numberOfColumns){
-            val startPosition = floatArrayOf(startPositionXOffset + i*tileWidth, startPositionYOffset, 0f)
+            val startPosition = floatArrayOf(startPositionXOffset + i*tileWidth, 1f, 0f)
             startPositions.add(startPosition)
         }
 
@@ -65,14 +65,17 @@ class MyGLRenderer : GLSurfaceView.Renderer {
                 break
             }
             val startPosition = startPositions[currentColumn-1]
-            for ( noteTime in noteTrack.noteOnsTimesInMs){
-                val distance = noteTime.toFloat() * tileSpeed
+            for ( noteDurationTimestamp in noteTrack.noteOnsTimesInMs){
+                val (noteStartTime, noteEndTime) = noteDurationTimestamp
+                val noteDuration = noteEndTime - noteStartTime
+                val noteHeight = (noteDuration.toFloat() * tileSpeed) * 0.95f
+                val startPositionYOffset =  noteHeight/2f
+                val distance = noteStartTime.toFloat() * tileSpeed
                 val tilePosition = startPosition.clone()
-//                 + floatArrayOf(0f, distance, 0f)
-                tilePosition[1] += distance
+                tilePosition[1] += distance + startPositionYOffset
                 tilePositions.add(tilePosition)
 
-                val tile = Tile(tileWidth, tileHeight)
+                val tile = Tile(tileWidth, noteHeight)
                 tiles.add(tile)
             }
             currentColumn++

@@ -2,10 +2,10 @@ package pl.put.airbeats.utils.midi
 
 class NoteTrack {
     private var nOfPlays = 0
-    val noteOnsTimesInMs = mutableListOf<Double>()
+    val noteOnsTimesInMs = mutableListOf<Pair<Double, Double>>()
 
-    fun addNoteOn(timeInMs: Double) {
-        noteOnsTimesInMs.add(timeInMs)
+    fun addNoteOn(noteDuration: Pair<Double, Double>) {
+        noteOnsTimesInMs.add(noteDuration)
         nOfPlays += 1
     }
 
