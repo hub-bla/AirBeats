@@ -10,6 +10,8 @@ private const val VERTEX_COUNT = 6
 class Tile {
     private val shaderProgram: ShaderProgram
 
+    val tileHeight: Float
+
     private val squareCords: FloatArray
     private val vertexBuffer: FloatBuffer
 
@@ -28,6 +30,8 @@ class Tile {
         color: FloatArray = floatArrayOf(0.118f, 0.663f, 0.933f, 1.0f),
     ) {
         this.shaderProgram = shaderProgram
+
+        this.tileHeight = tileHeight
 
         this.squareCords = calculateSquareCords(tileWidth, tileHeight)
         this.vertexBuffer = ByteBuffer.allocateDirect(squareCords.size * 4).run {
@@ -80,6 +84,14 @@ class Tile {
     fun changeColor(newColor: FloatArray) {
         color = newColor
     }
+
+    fun getPosition(): FloatArray {
+        val position = floatArrayOf(0f,0f,0f,1f)
+        Matrix.multiplyMV(position, 0, mvpMatrix, 0, position, 0)
+        val (x,y,z,w) = position
+        return floatArrayOf(x/w, y/w, z/w, 1f)
+    }
+
 
     fun draw() {
         shaderProgram.render(vertexBuffer, VERTEX_COUNT, mvpMatrix, color)

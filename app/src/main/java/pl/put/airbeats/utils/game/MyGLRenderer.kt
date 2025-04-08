@@ -7,6 +7,7 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.SystemClock
+import android.util.Log
 import pl.put.airbeats.utils.midi.NoteTrack
 
 class MyGLRenderer : GLSurfaceView.Renderer {
@@ -137,7 +138,13 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         for(tile in tiles){
             tile.move(0f, distance, 0f)
+            val (x,y,z,w) = tile.getPosition()
+            Log.d("Tile", "x:$x; y:$y; z:$z; w:$w\n")
             tile.draw()
+        }
+        tiles.removeIf { tile ->
+            val (x,y,z,w) = tile.getPosition()
+            y + tile.tileHeight/2.0 < -1.0
         }
     }
 
