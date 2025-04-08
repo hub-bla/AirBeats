@@ -17,7 +17,9 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     private var tileSpeed: Float = 1f
 
-    private var tiles = mutableListOf<Tile>()
+    private var tiles = mutableListOf<MutableList<Tile>>()
+
+    private lateinit var line: Tile
 
     private var lastTime: Long = 0
 
@@ -25,6 +27,11 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     private var bpm: Int = 180
 
     private lateinit var shaderProgram: ShaderProgram
+
+    @Volatile
+    var hasEventOcured = false
+    @Volatile
+    var columnEvent = 0
 
 
     constructor(noteTracks: Map<String, NoteTrack>, bpm: Int) {
@@ -99,6 +106,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
             val startPosition = startPositions[currentColumn]
             val (x, y, z) = startPosition
             val color = tileColors[currentColumn]
+            val tilesInColumn = mutableListOf<Tile>()
             for (noteDurationTimestamp in noteTrack.noteOnsTimesInMs){
                 // Calculate duration of note
                 val (noteStartTime, noteEndTime) = noteDurationTimestamp
@@ -118,10 +126,28 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
                 // Create Tile Object
                 val tile = Tile(shaderProgram, tileWidth, noteHeight, position, vpMatrix, color)
-                tiles.add(tile)
+                tilesInColumn.add(tile)
             }
+            tiles.add(tilesInColumn)
             currentColumn++
         }
+        for(i in tiles.size..<numberOfColumns){
+            val tilesInColumn = mutableListOf<Tile>()
+            tiles.add(tilesInColumn)
+        }
+
+
+        // Calculate line position
+        Matrix.setIdentityM(position, 0)
+        Matrix.translateM(position, 0, 0f, -0.7f, 0f)
+
+        line = Tile(
+            shaderProgram,
+            2.5f,
+            0.05f,
+            position,
+            vpMatrix,
+            floatArrayOf(0.818f, 0.163f, 0.133f, 1f))
 
         lastTime = SystemClock.uptimeMillis()
     }
@@ -136,15 +162,27 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         val distance = -tileSpeed * time.toInt()
 
-        for(tile in tiles){
+        if(hasEventOcured) {
+            Log.d("Game event", "Tile clicked at column $columnEvent")
+            hasEventOcured = false
+            if(tiles[columnEvent].isNotEmpty()) {
+                tiles[columnEvent].firstOrNull{ tile ->
+                    val (_, y, _, _) = tile.getPosition()
+                    (y + tile.tileHeight/2 > -0.7f && y - tile.tileHeight/2 < -0.7f)
+                }?.changeColor(floatArrayOf(0.118f, 0.863f, 0.133f, 1.0f))
+            }
+        }
+
+        for(tile in tiles.flatten()){
             tile.move(0f, distance, 0f)
-            val (x,y,z,w) = tile.getPosition()
-            Log.d("Tile", "x:$x; y:$y; z:$z; w:$w\n")
             tile.draw()
         }
-        tiles.removeIf { tile ->
-            val (x,y,z,w) = tile.getPosition()
-            y + tile.tileHeight/2.0 < -1.0
+        line.draw()
+        tiles.forEach { tilesInColumn ->
+            tilesInColumn.removeIf { tile ->
+                val (_, y, _, _) = tile.getPosition()
+                y + tile.tileHeight / 2.0 < -1.0
+            }
         }
     }
 

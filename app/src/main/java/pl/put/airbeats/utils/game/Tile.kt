@@ -92,7 +92,6 @@ class Tile {
         return floatArrayOf(x/w, y/w, z/w, 1f)
     }
 
-
     fun draw() {
         shaderProgram.render(vertexBuffer, VERTEX_COUNT, mvpMatrix, color)
     }
