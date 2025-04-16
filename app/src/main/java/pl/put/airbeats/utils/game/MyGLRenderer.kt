@@ -189,4 +189,6 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
     }
+
+
 }

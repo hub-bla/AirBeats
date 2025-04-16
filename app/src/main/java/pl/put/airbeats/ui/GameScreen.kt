@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.opengl.GLSurfaceView
 import android.util.Log
+import android.view.View
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,11 +26,14 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.runBlocking
 import pl.put.airbeats.ui.components.ErrorComponent
 import pl.put.airbeats.ui.components.Loading
+import pl.put.airbeats.utils.bt.BluetoothManager
+import pl.put.airbeats.utils.game.MyGLRenderer
 import pl.put.airbeats.utils.game.MyGLSurfaceView
 import pl.put.airbeats.utils.midi.MidiReader
 import pl.put.airbeats.utils.midi.NoteTrack
 
 @Composable
+@androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 fun GameScreen(songName: String, difficulty: String, modifier: Modifier = Modifier) {
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
     var bpm = remember { mutableIntStateOf(0) }
@@ -124,16 +128,45 @@ fun Menu(
 }
 
 @Composable
+@androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 fun Game(
         audioLink: String,
         noteTracks: Map<String, NoteTrack>,
         bpm: Int,
         modifier: Modifier = Modifier,
+
     ) {
+    val glViewRef = remember { mutableStateOf<MyGLSurfaceView?>(null) }
+    val rendererRef = remember { mutableStateOf<MyGLRenderer?>(null) }
+    val isConnected = remember { mutableStateOf(false) }
+    val bluetoothManager = remember { mutableStateOf(BluetoothManager()) }
+
+    LaunchedEffect(isConnected) {
+        if (isConnected.value) {
+            Log.d("INIT BLE L:ISTening", "")
+            bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
+                rendererRef.value?.columnEvent = data.toInt()
+                rendererRef.value?.hasEventOcured = true
+                Log.d("DATARECV", data)
+            }
+        } else {
+            isConnected.value = bluetoothManager.value.connectToDevice("airdrums")
+            Log.d("INIT BLE L:ISTening", "")
+            bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
+                rendererRef.value?.columnEvent = data.toInt()
+                rendererRef.value?.hasEventOcured = true
+                Log.d("DATARECV", data)
+            }
+        }
+    }
+
     AndroidView(
         modifier = modifier.fillMaxSize(),
-        factory = {context ->
-             MyGLSurfaceView(context, noteTracks, bpm)
+        factory =  { context ->
+            val glView = MyGLSurfaceView(context, noteTracks, bpm)
+            glViewRef.value = glView
+            rendererRef.value = glView.renderer
+            glView
         }
     )
 }

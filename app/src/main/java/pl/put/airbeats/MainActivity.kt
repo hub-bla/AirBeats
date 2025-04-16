@@ -19,15 +19,31 @@ import com.google.firebase.auth.auth
 import pl.put.airbeats.routes.RootRouter
 import pl.put.airbeats.ui.theme.AirBeatsTheme
 import pl.put.airbeats.utils.midi.MidiReader
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 
 val LocalUser = compositionLocalOf<MutableState<String>> { mutableStateOf("") }
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                1001
+            )
+        }
 
         setContent {
             AirBeatsTheme {
