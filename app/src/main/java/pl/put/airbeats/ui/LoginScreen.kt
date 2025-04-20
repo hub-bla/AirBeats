@@ -4,10 +4,12 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,6 +29,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -115,10 +118,13 @@ fun LoginScreen(
                     }
                 }
         })
-
-        Image(
-            painter = painterResource(R.drawable.temporary_logo), "logo"
-        )
+        Box(modifier = Modifier.padding(top = 50.dp)) {
+            Image(
+                painter = painterResource(R.drawable.airdrums_logo), "logo",
+                modifier = Modifier.size(256.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
 
         if (error != "") {
             ErrorComponent(
@@ -162,7 +168,7 @@ fun LoginScreen(
 }
 
 @Composable
-fun PasswordInput(label:String, value:String, changeValue: (String) -> Unit) {
+fun PasswordInput(label: String, value: String, changeValue: (String) -> Unit) {
     var passwordVisible = remember { mutableStateOf(false) }
     TextField(
         value = value,
@@ -240,7 +246,7 @@ fun Login(
 fun Register(
     email: String,
     password: String,
-    repeatedPassword:String,
+    repeatedPassword: String,
     changeEmailVal: (String) -> Unit,
     changePasswordVal: (String) -> Unit,
     changeRepPassVal: (String) -> Unit,
