@@ -1,6 +1,7 @@
 package pl.put.airbeats.ui
 
 import android.Manifest
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,7 @@ fun RemindersScreen(navController: NavController) {
     var screenState by remember { mutableStateOf("calendarEvents") }
     var pickedTime by remember { mutableStateOf("None") }
 
-    LaunchedEffect(writePermissionState, readPermissionState) {
+    LaunchedEffect(writePermissionState.status.isGranted, readPermissionState.status.isGranted) {
         if (!writePermissionState.status.isGranted) {
             writePermissionState.launchPermissionRequest()
         } else {
