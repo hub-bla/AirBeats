@@ -18,7 +18,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import pl.put.airbeats.routes.RootRouter
 import pl.put.airbeats.ui.theme.AirBeatsTheme
-import pl.put.airbeats.utils.midi.MidiReader
 
 
 val LocalUser = compositionLocalOf<MutableState<String>> { mutableStateOf("") }
