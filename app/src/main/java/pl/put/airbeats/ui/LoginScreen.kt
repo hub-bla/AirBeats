@@ -1,13 +1,18 @@
 package pl.put.airbeats.ui
 
+
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,13 +45,78 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+
 import pl.put.airbeats.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
 import pl.put.airbeats.ui.components.ErrorComponent
 import pl.put.airbeats.ui.components.Loading
 
+
+@Composable
+fun GoogleSignInButton(onSignIn: () -> Unit) {
+    val userState = LocalUser.current
+    val context = LocalContext.current
+
+    var userInfo by remember { mutableStateOf<String?>(null) }
+    var isSignedIn by remember { mutableStateOf(false) }
+    val webClientId = context.getString(R.string.web_client_id)
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(webClientId)
+        .requestEmail()
+        .build()
+
+    val googleSignInClient = remember {
+        GoogleSignIn.getClient(context, gso).apply {
+            signOut()
+        }
+    }
+
+    val signInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account?.idToken
+
+            if (idToken != null) {
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
+                FirebaseAuth.getInstance().signInWithCredential(credential)
+                    .addOnCompleteListener { authTask ->
+                        if (authTask.isSuccessful) {
+                            val user = FirebaseAuth.getInstance().currentUser
+                            userInfo = "Welcome, ${user?.displayName}"
+                            isSignedIn = true
+                            val userUID = user!!.uid
+                            Log.d("AirBeats", "User logged in: $userUID")
+                            userState.value = userUID
+                            onSignIn()
+                        } else {
+                            Log.e("GoogleSignIn", "Firebase auth failed", authTask.exception)
+                            userInfo = "Auth failed"
+                        }
+                    }
+            }
+        } catch (e: ApiException) {
+            Log.e("GoogleSignIn", "Google sign-in failed", e)
+            userInfo = "Google sign-in failed: ${e.localizedMessage}"
+        }
+    }
+
+    Button(onClick = {
+        signInLauncher.launch(googleSignInClient.signInIntent)
+    }) {
+        Text("Sign in with Google")
+    }
+
+}
 
 @Composable
 fun LoginScreen(
@@ -75,19 +147,17 @@ fun LoginScreen(
                 .addOnCompleteListener { task ->
                     isLoading = false
                     if (task.isSuccessful) {
-                        // Sign in success, update UI with the signed-in user's information
                         Log.d("AirBeats", "signInWithEmail:success")
                         val userUID = auth.currentUser!!.uid
-                        Log.d("AirBeats", "User logged in: $userUID")
                         userState.value = userUID
                         navController.navigate(Screen.Main.route)
                     } else {
-                        // If sign in fails, display a message to the user.
                         Log.w("AirBeats", "signInWithEmail:failure", task.exception)
                         error = "Your login credentials don't match an account in our system."
                     }
                 }
         })
+
 
         val register by rememberUpdatedState(newValue = {
             if (email.isEmpty() || password.isEmpty()) {
@@ -163,6 +233,7 @@ fun LoginScreen(
                 { formType = "login" }
             )
         }
+        GoogleSignInButton({ navController.navigate(Screen.Main.route) })
     }
 
 }
@@ -232,6 +303,7 @@ fun Login(
         ) {
             Text("Login")
         }
+
         Text(
             text = "Create account",
             modifier = Modifier.clickable { changeToRegisterForm() },
