@@ -15,9 +15,11 @@ import pl.put.airbeats.ui.HomeScreen
 import pl.put.airbeats.ui.LevelsScreen
 import pl.put.airbeats.ui.LoginScreen
 import pl.put.airbeats.ui.SettingsScreen
+import pl.put.airbeats.utils.room.LevelStatisticViewModel
 
+@androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
-fun RootRouter() {
+fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
     val navController = rememberNavController()
     val userState = LocalUser.current
     val isLoggedIn = Firebase.auth.currentUser?.uid == null || userState.value == ""
@@ -46,7 +48,7 @@ fun RootRouter() {
             )) { backStackEntry ->
             val songName: String = backStackEntry.arguments?.getString("songName") ?: ""
             val difficulty: String = backStackEntry.arguments?.getString("difficulty") ?: ""
-            GameScreen(songName, difficulty)
+            GameScreen(songName, difficulty, levelStatisticviewModel)
         }
     }
 }

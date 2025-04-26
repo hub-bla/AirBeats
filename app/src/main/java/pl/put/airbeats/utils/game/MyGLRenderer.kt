@@ -9,13 +9,31 @@ import android.opengl.Matrix
 import android.os.SystemClock
 import android.util.Log
 import pl.put.airbeats.utils.midi.NoteTrack
+import kotlin.math.abs
+
+// Game related constants
+const val LINE_HEIGHT = -0.7f // top = 1f, bottom = -1f
+const val TILE_ON_SCREEN_TIME = 1500f // in milliseconds
+const val TILE_SPEED = 2f / TILE_ON_SCREEN_TIME
+const val START_DELAY = 2000f // in milliseconds
+
+// Scoring related constants
+const val ERROR_MARGIN = 1.1f // relative to tile center (gives additional invisible error margin if >1f )
+
+//const val PERFECT_MARGIN = 0.1f // relative to tile center
+//const val GREAT_MARGIN = 0.5f // relative to tile center
+//const val GOOD_MARGIN = 1.1f // relative to tile center (gives additional invisible error margin if >1f )
+//const val PERFECT_POINTS = 100f
+//const val GREAT_POINTS = 50f
+//const val GOOD_POINTS = 10f
+//const val PERFECT_COMBO_MULT = 1.1f
+
 
 class MyGLRenderer : GLSurfaceView.Renderer {
+    // Render variables
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
     private val vpMatrix = FloatArray(16)
-
-    private var tileSpeed: Float = 1f
 
     private var tiles = mutableListOf<MutableList<Tile>>()
 
@@ -23,20 +41,41 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     private var lastTime: Long = 0
 
-    private var noteTracks: Map<String, NoteTrack>
-    private var bpm: Int = 180
-
     private lateinit var shaderProgram: ShaderProgram
 
+
+    // Level variables
+    private var noteTracks: Map<String, NoteTrack>
+//    private var bpm: Int
+    private val onLevelEnd: (LevelStatistics) -> Unit
+    // TODO audio link
+
+    // Level statistics variables
+    private var stats = LevelStatistics()
+
+//    private var points = 0f
+//    private var maxCombo = 0
+//    private var combo = 0
+//    private var comboMultiplier = 1f
+//    private var perfect = 0
+//    private var great = 0
+//    private var good = 0
+//    private var missed = 0
+
+    // Event variables
     @Volatile
     var hasEventOcured = false
     @Volatile
     var columnEvent = 0
 
+    // Other variables
+    val hitTileColor = floatArrayOf(0.118f, 0.863f, 0.133f, 1.0f)
+    val missedTileColor = floatArrayOf(0.818f, 0.163f, 0.133f, 1.0f)
 
-    constructor(noteTracks: Map<String, NoteTrack>, bpm: Int) {
+    constructor(noteTracks: Map<String, NoteTrack>, bpm: Int, onLevelEnd: (LevelStatistics) -> Unit,) {
         this.noteTracks = noteTracks
-        this.bpm = bpm
+//        this.bpm = bpm
+        this.onLevelEnd = onLevelEnd
     }
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
@@ -45,10 +84,6 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         // Set the background frame color
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
-
-        // Set speed of tile animation
-        val tileOnScreenTime = 1500f // in milliseconds
-        tileSpeed = 2f/tileOnScreenTime
 
         // Set number of columns
         val numberOfColumns = 4
@@ -68,8 +103,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         val startPositionXOffset = -1f + tileWidthOffset
 
         // Calculate starting y coordinate
-        val startDelayTime = 2000f // in milliseconds
-        val startPositionYOffset = 1f + tileSpeed * startDelayTime
+        val startPositionYOffset = 1f + TILE_SPEED * START_DELAY
 
         // Calculate starting positions for all columns
         val startPositions = mutableListOf<FloatArray>()
@@ -85,8 +119,6 @@ class MyGLRenderer : GLSurfaceView.Renderer {
             0f, 1.0f, 0.0f // Camera up
         )
 
-        // this projection matrix is applied to object coordinates
-        // in the onDrawFrame() method
         Matrix.frustumM(projectionMatrix, 0,
             -1f, 1f,    // left right
             -1f, 1f,    // bottom top
@@ -113,11 +145,11 @@ class MyGLRenderer : GLSurfaceView.Renderer {
                 val noteDuration = noteEndTime - noteStartTime
 
                 // Calculate height of tile based on duration of note
-                val noteHeight = (noteDuration.toFloat() * tileSpeed) * 0.95f
+                val noteHeight = (noteDuration.toFloat() * TILE_SPEED) * 0.95f
                 val startPositionYOffset =  noteHeight/2f
 
                 // Calculate y coordinate of tile based on note timestamp
-                val distance = noteStartTime.toFloat() * tileSpeed
+                val distance = noteStartTime.toFloat() * TILE_SPEED
                 val yDistance = y + distance + startPositionYOffset
 
                 // Calculate tile position
@@ -127,6 +159,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
                 // Create Tile Object
                 val tile = Tile(shaderProgram, tileWidth, noteHeight, position, vpMatrix, color)
                 tilesInColumn.add(tile)
+                stats.addTile()
             }
             tiles.add(tilesInColumn)
             currentColumn++
@@ -139,7 +172,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         // Calculate line position
         Matrix.setIdentityM(position, 0)
-        Matrix.translateM(position, 0, 0f, -0.7f, 0f)
+        Matrix.translateM(position, 0, 0f, LINE_HEIGHT, 0f)
 
         line = Tile(
             shaderProgram,
@@ -160,18 +193,33 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         val time = currentTime - lastTime
         lastTime = currentTime
 
-        val distance = -tileSpeed * time.toInt()
+        val distance = -TILE_SPEED * time.toInt()
 
         if(hasEventOcured) {
-            Log.d("Game event", "Tile clicked at column $columnEvent")
+            Log.d("Game event", "Event at column $columnEvent")
             hasEventOcured = false
             if(tiles[columnEvent].isNotEmpty()) {
+                var relativeOffset = 2f
                 tiles[columnEvent].firstOrNull{ tile ->
                     val (_, y, _, _) = tile.getPosition()
-                    (y + tile.tileHeight/2 > -0.7f && y - tile.tileHeight/2 < -0.7f)
-                }?.changeColor(floatArrayOf(0.118f, 0.863f, 0.133f, 1.0f))
+                    relativeOffset = (abs(LINE_HEIGHT - y)) / (tile.tileHeight / 2f)
+                    (relativeOffset < ERROR_MARGIN)
+                }?.let {
+                    Log.d("Game event", "Tile hit with relative offset $relativeOffset")
+                    stats.score(relativeOffset)
+                    it.changeColor(hitTileColor)
+                    Log.d("Game event", "Current points ${stats.points}")
+                }
             }
         }
+
+        // TODO tile coloring after miss
+//        tiles.forEach { tilesInColumn ->
+//            tilesInColumn.firstOrNull { tile ->
+//                val (_, y, _, _) = tile.getPosition()
+//                (y + tile.tileHeight / 2f) < LINE_HEIGHT
+//            }?.changeColor(missedTileColor)
+//        }
 
         for(tile in tiles.flatten()){
             tile.move(0f, distance, 0f)
@@ -181,14 +229,16 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         tiles.forEach { tilesInColumn ->
             tilesInColumn.removeIf { tile ->
                 val (_, y, _, _) = tile.getPosition()
-                y + tile.tileHeight / 2.0 < -1.0
+                (y + tile.tileHeight / 2f) < -1.0
             }
+        }
+
+        if( tiles.flatten().isEmpty() ) {
+            onLevelEnd(stats)
         }
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
     }
-
-
 }

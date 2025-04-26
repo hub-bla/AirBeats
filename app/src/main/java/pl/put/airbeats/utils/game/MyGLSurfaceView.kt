@@ -7,38 +7,41 @@ import android.util.Log
 import pl.put.airbeats.utils.bt.BluetoothManager
 import pl.put.airbeats.utils.midi.NoteTrack
 
-class MyGLSurfaceView : GLSurfaceView {
-    val renderer: MyGLRenderer
-
-    constructor(
-        context: Context,
-    ) : super(context) {
-        val noteTrack: Map<String, NoteTrack> = emptyMap<String, NoteTrack>()
-        val bpm = 0
-
-        // Create an OpenGL ES 2.0 context
-        setEGLContextClientVersion(2)
+class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
+    lateinit var renderer: MyGLRenderer
 
 
 
-
-
-        renderer = MyGLRenderer(noteTrack, bpm)
-
-        setRenderer(renderer)
-
-
-    }
+//    constructor(
+//        context: Context,
+//    ) : super(context) {
+//        val noteTrack: Map<String, NoteTrack> = emptyMap<String, NoteTrack>()
+//        val bpm = 0
+//
+//        // Create an OpenGL ES 2.0 context
+//        setEGLContextClientVersion(2)
+//
+//
+//
+//
+//
+//        renderer = MyGLRenderer(noteTrack, bpm)
+//
+//        setRenderer(renderer)
+//
+//
+//    }
 
     constructor(
         context: Context,
         noteTrack: Map<String, NoteTrack> = emptyMap<String, NoteTrack>(),
-        bpm: Int = 0
-    ) : super(context) {
+        bpm: Int = 0,
+        onLevelEnd: (LevelStatistics) -> Unit,
+    ) : this(context) {
         // Create an OpenGL ES 2.0 context
         setEGLContextClientVersion(2)
 
-        renderer = MyGLRenderer(noteTrack, bpm)
+        renderer = MyGLRenderer(noteTrack, bpm, onLevelEnd)
 
         setRenderer(renderer)
     }

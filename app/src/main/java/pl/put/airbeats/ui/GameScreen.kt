@@ -7,13 +7,19 @@ import android.util.Log
 import android.view.View
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,33 +30,62 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.runBlocking
+import pl.put.airbeats.LocalUser
 import pl.put.airbeats.ui.components.ErrorComponent
 import pl.put.airbeats.ui.components.Loading
 import pl.put.airbeats.utils.bt.BluetoothManager
+import pl.put.airbeats.utils.game.LevelStatistics
 import pl.put.airbeats.utils.game.MyGLRenderer
 import pl.put.airbeats.utils.game.MyGLSurfaceView
 import pl.put.airbeats.utils.midi.MidiReader
 import pl.put.airbeats.utils.midi.NoteTrack
+import pl.put.airbeats.utils.room.LevelStatisticEntity
+import pl.put.airbeats.utils.room.LevelStatisticViewModel
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Date
 
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
-fun GameScreen(songName: String, difficulty: String, modifier: Modifier = Modifier) {
+fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: LevelStatisticViewModel, modifier: Modifier = Modifier) {
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
     var bpm = remember { mutableIntStateOf(0) }
     var audioLink = remember { mutableStateOf("") }
-    var isPlaying = remember { mutableStateOf(false) }
+    var gameState by remember { mutableStateOf(0) }
+    var levelStatistics by remember { mutableStateOf<LevelStatistics?>(null) }
 
-    when(isPlaying.value) {
-        false -> Menu(
+    val onLevelEnd = { stats: LevelStatistics ->
+        levelStatistics = stats
+        gameState = 2
+    }
+
+    when(gameState) {
+        0 -> Menu(
             {newNoteTracks ->  noteTracks.value = newNoteTracks},
             {newBpm ->  bpm.intValue = newBpm},
             {newAudioLink ->  audioLink.value = newAudioLink},
             songName,
             difficulty,
-            {isPlaying.value = true},
-            modifier)
+            {gameState = 1},
+            modifier,
+        )
 
-        true -> Game(audioLink.value, noteTracks.value, bpm.intValue)
+        1 -> Game(
+            audioLink.value,
+            noteTracks.value,
+            bpm.intValue,
+            onLevelEnd,
+            modifier,
+        )
+        2 -> LevelEnd(
+            songName,
+            difficulty,
+            levelStatistics!!,
+            {gameState = 1},
+            levelStatisticviewModel,
+            modifier,
+        )
     }
 }
 
@@ -62,7 +97,8 @@ fun Menu(
         songName: String,
         difficulty: String,
         startGame: () -> Unit,
-        modifier: Modifier = Modifier) {
+        modifier: Modifier = Modifier,
+    ) {
     var isLoading = remember { mutableStateOf(true) }
     var error = remember { mutableStateOf("") }
 
@@ -133,8 +169,8 @@ fun Game(
         audioLink: String,
         noteTracks: Map<String, NoteTrack>,
         bpm: Int,
+        onLevelEnd: (LevelStatistics) -> Unit,
         modifier: Modifier = Modifier,
-
     ) {
     val glViewRef = remember { mutableStateOf<MyGLSurfaceView?>(null) }
     val rendererRef = remember { mutableStateOf<MyGLRenderer?>(null) }
@@ -163,10 +199,70 @@ fun Game(
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory =  { context ->
-            val glView = MyGLSurfaceView(context, noteTracks, bpm)
+            val glView = MyGLSurfaceView(context, noteTracks, bpm, { stats ->
+                onLevelEnd(stats)
+                bluetoothManager.value.disconnect()
+            })
             glViewRef.value = glView
             rendererRef.value = glView.renderer
             glView
         }
     )
+}
+
+@Composable
+fun LevelEnd(
+    songName: String,
+    difficulty: String,
+    stats: LevelStatistics,
+    startGame: () -> Unit,
+    levelStatisticviewModel: LevelStatisticViewModel,
+    modifier: Modifier = Modifier,
+    ) {
+    val userID = LocalUser.current.value
+
+
+    val onSave = {
+        val formater = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val newLevelStatistcRow = LevelStatisticEntity(
+            userID = userID,
+            songName = songName,
+            difficulty = difficulty,
+            date = LocalDateTime.now().format(formater),
+            points = stats.points,
+            perfect = stats.perfect,
+            great = stats.great,
+            good = stats.good,
+            missed = stats.missed,
+            maxCombo = stats.maxCombo
+        )
+        levelStatisticviewModel.insert(newLevelStatistcRow)
+    }
+    val levelStatistics by levelStatisticviewModel.selectUser(userID).collectAsState(emptyList())
+
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Level ended\nPoints:${stats.points}")
+
+        Button(onClick = onSave) {
+            Text("save statistics")
+        }
+
+        Button(onClick = startGame) {
+            Text("play again")
+        }
+
+        Text("All Player Statistics")
+
+        LazyColumn {
+            items(levelStatistics) { levelStatistic ->
+                Row {
+                    Text("Date: ${levelStatistic.date} points: ${levelStatistic.points} missed: ${levelStatistic.missed}")
+                }
+            }
+        }
+    }
 }
