@@ -1,19 +1,13 @@
 package pl.put.airbeats.ui
 
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.opengl.GLSurfaceView
 import android.util.Log
-import android.view.View
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
@@ -41,10 +34,8 @@ import pl.put.airbeats.utils.midi.MidiReader
 import pl.put.airbeats.utils.midi.NoteTrack
 import pl.put.airbeats.utils.room.LevelStatisticEntity
 import pl.put.airbeats.utils.room.LevelStatisticViewModel
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Date
 
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
@@ -182,7 +173,7 @@ fun Game(
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
                 rendererRef.value?.columnEvent = data.toInt()
-                rendererRef.value?.hasEventOcured = true
+                rendererRef.value?.hasEventOccured = true
                 Log.d("DATARECV", data)
             }
         } else {
@@ -190,7 +181,7 @@ fun Game(
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
                 rendererRef.value?.columnEvent = data.toInt()
-                rendererRef.value?.hasEventOcured = true
+                rendererRef.value?.hasEventOccured = true
                 Log.d("DATARECV", data)
             }
         }

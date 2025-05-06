@@ -4,7 +4,6 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
 import android.util.Log
-import pl.put.airbeats.utils.bt.BluetoothManager
 import pl.put.airbeats.utils.midi.NoteTrack
 
 class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
@@ -63,7 +62,7 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
                     x < 0.5 -> 2
                     else -> 3
                 }
-                renderer.hasEventOcured = true
+                renderer.hasEventOccured = true
             }
         }
 

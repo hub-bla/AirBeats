@@ -13,6 +13,7 @@ import kotlin.math.abs
 
 // Game related constants
 const val LINE_HEIGHT = -0.7f // top = 1f, bottom = -1f
+const val STICK_HEIGHT = 0f // top = 1f, bottom = -1f
 const val TILE_ON_SCREEN_TIME = 1500f // in milliseconds
 const val TILE_SPEED = 2f / TILE_ON_SCREEN_TIME
 const val START_DELAY = 2000f // in milliseconds
@@ -38,6 +39,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     private var tiles = mutableListOf<MutableList<Tile>>()
 
     private lateinit var line: Tile
+    private lateinit var leftStick: Tile
+    private lateinit var rightStick: Tile
 
     private var lastTime: Long = 0
 
@@ -64,13 +67,19 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     // Event variables
     @Volatile
-    var hasEventOcured = false
+    var hasEventOccured = false
     @Volatile
     var columnEvent = 0
+    @Volatile
+    var leftStickPos = -0.5f // normalized to range from -1 (left) to 1 (right)
+    @Volatile
+    var rightStickPos = 0.5f // normalized to range from -1 (left) to 1 (right)
 
     // Other variables
     val hitTileColor = floatArrayOf(0.118f, 0.863f, 0.133f, 1.0f)
     val missedTileColor = floatArrayOf(0.818f, 0.163f, 0.133f, 1.0f)
+    val leftStickColor = floatArrayOf(0.133f, 0.818f, 0.133f, 1.0f)
+    val rightStickColor = floatArrayOf(0.818f, 0.818f, 0.133f, 1.0f)
 
     constructor(noteTracks: Map<String, NoteTrack>, bpm: Int, onLevelEnd: (LevelStatistics) -> Unit,) {
         this.noteTracks = noteTracks
@@ -172,7 +181,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         // Calculate line position
         Matrix.setIdentityM(position, 0)
-        Matrix.translateM(position, 0, 0f, LINE_HEIGHT, 0f)
+        Matrix.translateM(position, 0, 0f, LINE_HEIGHT, -0.1f)
 
         line = Tile(
             shaderProgram,
@@ -181,6 +190,32 @@ class MyGLRenderer : GLSurfaceView.Renderer {
             position,
             vpMatrix,
             floatArrayOf(0.818f, 0.163f, 0.133f, 1f))
+
+
+        // Calculate left stick position
+        Matrix.setIdentityM(position, 0)
+        Matrix.translateM(position, 0, leftStickPos, STICK_HEIGHT, -0.1f)
+
+        leftStick = Tile(
+            shaderProgram,
+            0.1f,
+            0.045f,
+            position,
+            vpMatrix,
+            leftStickColor)
+
+
+        // Calculate right stick position
+        Matrix.setIdentityM(position, 0)
+        Matrix.translateM(position, 0, rightStickPos, STICK_HEIGHT, -0.1f)
+
+        rightStick = Tile(
+            shaderProgram,
+            0.1f,
+            0.045f,
+            position,
+            vpMatrix,
+            rightStickColor)
 
         lastTime = SystemClock.uptimeMillis()
     }
@@ -195,9 +230,9 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         val distance = -TILE_SPEED * time.toInt()
 
-        if(hasEventOcured) {
+        if(hasEventOccured) {
             Log.d("Game event", "Event at column $columnEvent")
-            hasEventOcured = false
+            hasEventOccured = false
             if(tiles[columnEvent].isNotEmpty()) {
                 var relativeOffset = 2f
                 tiles[columnEvent].firstOrNull{ tile ->
@@ -226,6 +261,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
             tile.draw()
         }
         line.draw()
+        leftStick.draw(leftStickPos, STICK_HEIGHT, -0.1f)
+        rightStick.draw(rightStickPos, STICK_HEIGHT, -0.1f)
         tiles.forEach { tilesInColumn ->
             tilesInColumn.removeIf { tile ->
                 val (_, y, _, _) = tile.getPosition()

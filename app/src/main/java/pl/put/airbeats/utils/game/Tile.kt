@@ -95,4 +95,19 @@ class Tile {
     fun draw() {
         shaderProgram.render(vertexBuffer, VERTEX_COUNT, mvpMatrix, color)
     }
+
+    fun draw(x: Float, y: Float, z: Float) {
+        Matrix.setIdentityM(position, 0)
+        Matrix.translateM(position, 0, x, y, z)
+        Matrix.multiplyMM(mvpMatrix, 0, vpMatrix, 0, position, 0)
+        shaderProgram.render(vertexBuffer, VERTEX_COUNT, mvpMatrix, color)
+    }
+
+    fun draw(moveDirection: FloatArray) {
+        val (x, y, z) = moveDirection
+        Matrix.setIdentityM(position, 0)
+        Matrix.translateM(position, 0, x, y, z)
+        Matrix.multiplyMM(mvpMatrix, 0, vpMatrix, 0, position, 0)
+        shaderProgram.render(vertexBuffer, VERTEX_COUNT, mvpMatrix, color)
+    }
 }
