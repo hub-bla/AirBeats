@@ -54,9 +54,10 @@ fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
             val songName: String = backStackEntry.arguments?.getString("songName") ?: ""
             val difficulty: String = backStackEntry.arguments?.getString("difficulty") ?: ""
             GameScreen(songName, difficulty, levelStatisticviewModel)
+        }
 
         composable(route = Screen.Settings.route + "/reminders") {
             RemindersScreen(navController)
         }
-    }
-}
+
+}}
