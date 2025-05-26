@@ -41,8 +41,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     private var tiles = mutableListOf<MutableList<Tile>>()
 
     private lateinit var line: Tile
-    private lateinit var leftStick: Tile
-    private lateinit var rightStick: Tile
+    private lateinit var leftStick: Dot
+    private lateinit var rightStick: Dot
 
     private var lastTime: Long = 0
 
@@ -200,7 +200,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         Matrix.setIdentityM(position, 0)
         Matrix.translateM(position, 0, leftStickPos, STICK_HEIGHT, -0.1f)
 
-        leftStick = Tile(
+        leftStick = Dot(
             shaderProgram,
             0.1f,
             0.045f,
@@ -213,7 +213,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         Matrix.setIdentityM(position, 0)
         Matrix.translateM(position, 0, rightStickPos, STICK_HEIGHT, -0.1f)
 
-        rightStick = Tile(
+        rightStick = Dot(
             shaderProgram,
             0.1f,
             0.045f,

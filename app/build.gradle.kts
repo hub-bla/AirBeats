@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.google.play.services.auth)
     implementation(libs.facebook.sdk)
     testImplementation(libs.junit)
+    implementation("com.facebook.android:facebook-share:16.3.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

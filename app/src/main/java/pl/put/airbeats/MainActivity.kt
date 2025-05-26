@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         FacebookSdk.sdkInitialize(this)
+        FacebookSdk.setAutoInitEnabled(true)
         FacebookSdk.fullyInitialize()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
 
