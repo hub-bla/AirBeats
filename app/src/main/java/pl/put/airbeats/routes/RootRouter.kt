@@ -2,7 +2,10 @@ package pl.put.airbeats.routes
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+
 import androidx.navigation.NavType
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -14,6 +17,7 @@ import pl.put.airbeats.ui.GameScreen
 import pl.put.airbeats.ui.HomeScreen
 import pl.put.airbeats.ui.LevelsScreen
 import pl.put.airbeats.ui.LoginScreen
+import pl.put.airbeats.ui.RemindersScreen
 import pl.put.airbeats.ui.SettingsScreen
 import pl.put.airbeats.utils.room.LevelStatisticViewModel
 
@@ -40,6 +44,7 @@ fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
         composable(route = Screen.Settings.route) {
             SettingsScreen(navController)
         }
+
         composable(
             route = "${Screen.Game.route}/{songName}/{difficulty}",
             arguments = listOf(
@@ -49,6 +54,9 @@ fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
             val songName: String = backStackEntry.arguments?.getString("songName") ?: ""
             val difficulty: String = backStackEntry.arguments?.getString("difficulty") ?: ""
             GameScreen(songName, difficulty, levelStatisticviewModel)
+
+        composable(route = Screen.Settings.route + "/reminders") {
+            RemindersScreen(navController)
         }
     }
 }

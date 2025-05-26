@@ -19,8 +19,12 @@ credentials = "1.5.0"
 credentialsPlayServicesAuth = "1.5.0"
 googleid = "1.1.1"
 ktor_version = "3.1.0"
+
 room = "2.7.1"
 ksp = "2.0.21-1.0.26"
+accompanist = "0.30.1"
+lifecycle = "2.6.2"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,7 +42,7 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx_coroutines" }
-ktmidi-android = {module ="dev.atsushieno:ktmidi-android", version.ref = "ktmidi"}
+ktmidi-android = { module = "dev.atsushieno:ktmidi-android", version.ref = "ktmidi" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase_bom" }
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 google-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
@@ -46,11 +50,18 @@ google-firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
+
 ktor-client-core = {group = "io.ktor", name = "ktor-client-core", version.ref = "ktor_version"}
 ktor-client-cio= {group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor_version"}
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
