@@ -24,6 +24,7 @@ room = "2.7.1"
 ksp = "2.0.21-1.0.26"
 accompanist = "0.30.1"
 lifecycle = "2.6.2"
+play-services-auth = "21.0.0"
 
 
 [libraries]
@@ -61,6 +62,7 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+google-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
 
 
 [plugins]
