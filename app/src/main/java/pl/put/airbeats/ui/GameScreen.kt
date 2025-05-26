@@ -3,14 +3,10 @@ package pl.put.airbeats.ui
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.util.Log
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,11 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.ui.components.ErrorComponent
@@ -39,16 +33,15 @@ import pl.put.airbeats.utils.game.MyGLSurfaceView
 import pl.put.airbeats.utils.midi.MidiReader
 import pl.put.airbeats.utils.midi.NoteTrack
 import pl.put.airbeats.utils.room.LevelStatisticEntity
-import pl.put.airbeats.utils.room.LevelStatisticViewModel
+import pl.put.airbeats.utils.room.AirBeatsViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
-fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: LevelStatisticViewModel, modifier: Modifier = Modifier) {
+fun GameScreen(songName: String, difficulty: String, airBeatsViewModel: AirBeatsViewModel, modifier: Modifier = Modifier) {
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
     var bpm = remember { mutableIntStateOf(0) }
-    var audioLink = remember { mutableStateOf("") }
     var mediaPlayer = remember { mutableStateOf(MediaPlayer()) }
     var gameState by remember { mutableStateOf(0) }
     var levelStatistics by remember { mutableStateOf<LevelStatistics?>(null) }
@@ -63,7 +56,6 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
             {newNoteTracks ->  noteTracks.value = newNoteTracks},
             {newBpm ->  bpm.intValue = newBpm},
             {newMediaPlayer ->  mediaPlayer.value = newMediaPlayer},
-//            {newAudioLink ->  audioLink.value = newAudioLink},
             songName,
             difficulty,
             {gameState = 1},
@@ -71,20 +63,19 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
         )
 
         1 -> Game(
+            airBeatsViewModel,
             mediaPlayer.value,
-//            audioLink.value,
             noteTracks.value,
             bpm.intValue,
             onLevelEnd,
             modifier,
         )
         2 -> LevelEnd(
-            mediaPlayer.value,
             songName,
             difficulty,
             levelStatistics!!,
             {gameState = 0},
-            levelStatisticviewModel,
+            airBeatsViewModel,
             modifier,
         )
     }
@@ -95,7 +86,6 @@ fun Menu(
     changeNoteTracks: (Map<String, NoteTrack>) -> Unit,
     changeBpm: (Int) -> Unit,
     changeMediaPlayer: (MediaPlayer) -> Unit,
-//        changeAudioLink: (String) -> Unit,
     songName: String,
     difficulty: String,
     startGame: () -> Unit,
@@ -131,7 +121,6 @@ fun Menu(
                     val midi = MidiReader()
                     val noteTracks = midi.read(midiLink, bpm)
                     Log.d("Game", "Note Tracks loaded")
-//                    changeAudioLink(audioLink)
                     changeNoteTracks(noteTracks)
                     changeBpm(bpm)
                 }
@@ -153,7 +142,6 @@ fun Menu(
 //                    }
                 }
                 changeMediaPlayer(mediaPlayer)
-//                isLoading.value = false
             }.addOnFailureListener {
                 Log.d("Firestore failure", "couldn't fetch data")
                 isLoading.value = false
@@ -187,8 +175,8 @@ fun Menu(
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 fun Game(
+        airBeatsViewModel: AirBeatsViewModel,
         mediaPlayer: MediaPlayer,
-//        audioLink: String,
         noteTracks: Map<String, NoteTrack>,
         bpm: Int,
         onLevelEnd: (LevelStatistics) -> Unit,
@@ -198,6 +186,8 @@ fun Game(
     val rendererRef = remember { mutableStateOf<MyGLRenderer?>(null) }
     val isConnected = remember { mutableStateOf(false) }
     val bluetoothManager = remember { mutableStateOf(BluetoothManager()) }
+
+    val isSavingEnergy by airBeatsViewModel.isSavingEnergy.collectAsState()
 
     BackHandler {
         onLevelEnd(LevelStatistics())
@@ -244,7 +234,7 @@ fun Game(
         factory =  { context ->
             val glView = MyGLSurfaceView(context, noteTracks, bpm,
                 { mediaPlayer.start() },
-                { mediaPlayer.stop() },
+                isSavingEnergy,
                 { stats ->
                     onLevelEnd(stats)
                     bluetoothManager.value.disconnect()
@@ -259,12 +249,11 @@ fun Game(
 
 @Composable
 fun LevelEnd(
-    mediaPlayer: MediaPlayer,
     songName: String,
     difficulty: String,
     stats: LevelStatistics,
     startGame: () -> Unit,
-    levelStatisticviewModel: LevelStatisticViewModel,
+    levelStatisticviewModel: AirBeatsViewModel,
     modifier: Modifier = Modifier,
     ) {
     val hasSavedStatistics = remember { mutableStateOf(false) }
@@ -321,14 +310,5 @@ fun LevelEnd(
             Text("play again")
         }
 
-//        Text("All Player Statistics")
-//
-//        LazyColumn {
-//            items(levelStatistics) { levelStatistic ->
-//                Row {
-//                    Text("Date: ${levelStatistic.date} points: ${levelStatistic.points} missed: ${levelStatistic.missed}")
-//                }
-//            }
-//        }
     }
 }

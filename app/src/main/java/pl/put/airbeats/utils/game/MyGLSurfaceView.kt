@@ -10,9 +10,6 @@ import pl.put.airbeats.utils.midi.NoteTrack
 class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
     lateinit var renderer: MyGLRenderer
 
-    var onAnimationEnd: () -> Unit = {}
-
-
 //    constructor(
 //        context: Context,
 //    ) : super(context) {
@@ -38,7 +35,7 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         noteTrack: Map<String, NoteTrack> = emptyMap<String, NoteTrack>(),
         bpm: Int = 0,
         playAudio: () -> Unit,
-        onAnimationEnd: () -> Unit,
+        isSavingEnergy: Boolean,
         onLevelEnd: (LevelStatistics) -> Unit,
     ) : this(context) {
         // Create an OpenGL ES 2.0 context
@@ -46,7 +43,12 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
         renderer = MyGLRenderer(noteTrack, bpm, playAudio, onLevelEnd)
 
-        this.onAnimationEnd = onAnimationEnd
+        if(isSavingEnergy) {
+            Log.d("EnergySaving", "true")
+            super.setEGLConfigChooser(5, 6, 5, 0, 16, 0)
+        } else {
+            Log.d("EnergySaving", "false")
+        }
 
         setRenderer(renderer)
     }
@@ -73,17 +75,5 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         }
 
         return true
-    }
-
-//    override fun onAnimationEnd() {
-//        onAnimationEnd()
-//        super.onAnimationEnd()
-//    }
-
-    override fun onVisibilityChanged(changedView: View, visibility: Int) {
-        if(visibility == GONE) {
-            onAnimationEnd()
-        }
-        super.onVisibilityChanged(changedView, visibility)
     }
 }

@@ -1,8 +1,6 @@
 package pl.put.airbeats.ui
 
-import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,11 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pl.put.airbeats.LocalUser
-import pl.put.airbeats.utils.room.LevelStatisticViewModel
+import pl.put.airbeats.utils.room.AirBeatsViewModel
 
 @Composable
 fun StatisticsScreen(
-    levelStatisticviewModel: LevelStatisticViewModel,
+    levelStatisticviewModel: AirBeatsViewModel,
     modifier: Modifier = Modifier
 ) {
     val userID = LocalUser.current.value

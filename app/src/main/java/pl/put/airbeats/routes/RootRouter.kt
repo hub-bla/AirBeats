@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 import androidx.navigation.NavType
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,11 +19,11 @@ import pl.put.airbeats.ui.LoginScreen
 import pl.put.airbeats.ui.RemindersScreen
 import pl.put.airbeats.ui.SettingsScreen
 import pl.put.airbeats.ui.StatisticsScreen
-import pl.put.airbeats.utils.room.LevelStatisticViewModel
+import pl.put.airbeats.utils.room.AirBeatsViewModel
 
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
-fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
+fun RootRouter(airBeatsViewModel: AirBeatsViewModel) {
     val navController = rememberNavController()
     val userState = LocalUser.current
     val isLoggedIn = Firebase.auth.currentUser?.uid == null || userState.value == ""
@@ -43,7 +42,7 @@ fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
             LevelsScreen(navController)
         }
         composable(route = Screen.Settings.route) {
-            SettingsScreen(navController)
+            SettingsScreen(navController, airBeatsViewModel)
         }
 
         composable(
@@ -54,7 +53,7 @@ fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
             )) { backStackEntry ->
             val songName: String = backStackEntry.arguments?.getString("songName") ?: ""
             val difficulty: String = backStackEntry.arguments?.getString("difficulty") ?: ""
-            GameScreen(songName, difficulty, levelStatisticviewModel)
+            GameScreen(songName, difficulty, airBeatsViewModel)
         }
 
         composable(route = Screen.Settings.route + "/reminders") {
@@ -62,7 +61,7 @@ fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
         }
 
         composable(route = Screen.Statistics.route) {
-            StatisticsScreen(levelStatisticviewModel)
+            StatisticsScreen(airBeatsViewModel)
         }
     }
 }
