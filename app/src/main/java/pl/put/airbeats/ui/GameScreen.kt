@@ -36,6 +36,16 @@ import pl.put.airbeats.utils.room.LevelStatisticEntity
 import pl.put.airbeats.utils.room.AirBeatsViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.core.net.toUri
+import android.app.Activity
+import android.net.Uri
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.facebook.share.model.ShareLinkContent
+import com.facebook.share.widget.ShareDialog
 
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
@@ -295,6 +305,7 @@ fun LevelEnd(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        FacebookShareButton(stats.points)
         Text("Level ended\nPoints:${stats.points}")
 
         Text("Level Statistics")
@@ -317,5 +328,54 @@ fun LevelEnd(
             Text("play again")
         }
 
+    }
+}
+
+@Composable
+fun FacebookShareButton(
+    points: Float,
+    urlToShare: String = "https://github.com/hub-bla/AirBeats"
+) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val quote = "Got $points points in AirBeats!"
+    var shareDialog by remember { mutableStateOf<ShareDialog?>(null) }
+
+    LaunchedEffect(Unit) {
+        if (activity != null) {
+            val canShow = try {
+                ShareDialog.canShow(ShareLinkContent::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+            if (canShow) {
+                shareDialog = ShareDialog(activity)
+            } else {
+                Log.d("FBShareButton", "Cannot show ShareDialog")
+            }
+        } else {
+            Log.d("FBShareButton", "Context is not an Activity")
+        }
+    }
+
+    Button(
+        onClick = {
+            if (shareDialog == null) {
+                Log.d("FBShareButton", "ShareDialog not initialized")
+                return@Button
+            }
+            val content = ShareLinkContent.Builder()
+                .setContentUrl(urlToShare.toUri())
+                .setQuote(quote)
+                .build()
+
+            shareDialog?.show(content)
+        },
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+    ) {
+        Text("Share on Facebook")
     }
 }
