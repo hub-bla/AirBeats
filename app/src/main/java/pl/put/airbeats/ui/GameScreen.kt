@@ -6,10 +6,14 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,7 +53,12 @@ import com.facebook.share.widget.ShareDialog
 
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
-fun GameScreen(songName: String, difficulty: String, airBeatsViewModel: AirBeatsViewModel, modifier: Modifier = Modifier) {
+fun GameScreen(
+    songName: String,
+    difficulty: String,
+    airBeatsViewModel: AirBeatsViewModel,
+    modifier: Modifier = Modifier
+) {
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
     var bpm = remember { mutableIntStateOf(0) }
     var mediaPlayer = remember { mutableStateOf(MediaPlayer()) }
@@ -61,14 +70,14 @@ fun GameScreen(songName: String, difficulty: String, airBeatsViewModel: AirBeats
         gameState = 2
     }
 
-    when(gameState) {
+    when (gameState) {
         0 -> Menu(
             {newNoteTracks ->  noteTracks.value = newNoteTracks},
             {newBpm ->  bpm.intValue = newBpm},
             {newMediaPlayer ->  mediaPlayer.value = newMediaPlayer},
             songName,
             difficulty,
-            {gameState = 1},
+            { gameState = 1 },
             modifier,
         )
 
@@ -78,8 +87,10 @@ fun GameScreen(songName: String, difficulty: String, airBeatsViewModel: AirBeats
             noteTracks.value,
             bpm.intValue,
             onLevelEnd,
+            {gameState = 2},
             modifier,
         )
+
         2 -> LevelEnd(
             songName,
             difficulty,
@@ -117,10 +128,9 @@ fun Menu(
                 Log.d("Firestore success", "Song document loaded")
                 midiLink = result.get("midi").toString()
                 audioLink = result.get("audio").toString()
-//                audioLink = result.get("midi").toString()
                 bpm = result.get("bpm", ).toString().toInt()
 
-                if(midiLink == "") {
+                if (midiLink == "") {
                     Log.d("Game", "Song document is empty")
                     isLoading.value = false
                     error.value = "Song data is not available."
@@ -190,6 +200,7 @@ fun Game(
         noteTracks: Map<String, NoteTrack>,
         bpm: Int,
         onLevelEnd: (LevelStatistics) -> Unit,
+        changeState: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
     val glViewRef = remember { mutableStateOf<MyGLSurfaceView?>(null) }
@@ -199,23 +210,27 @@ fun Game(
 
     val isSavingEnergy by airBeatsViewModel.isSavingEnergy.collectAsState()
 
-    BackHandler {
-        onLevelEnd(LevelStatistics())
-        bluetoothManager.value.disconnect()
-        mediaPlayer.stop()
-    }
+//    BackHandler {
+//        onLevelEnd(LevelStatistics())
+//        bluetoothManager.value.disconnect()
+//        mediaPlayer.stop()
+//    }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            //onLevelEnd(LevelStatistics())
+            changeState()
+            bluetoothManager.value.disconnect()
+            mediaPlayer.stop()
+        }
+    }
     //array [stick id][float pos][event]
     LaunchedEffect(isConnected) {
         if (isConnected.value) {
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-
-                if (data[2].toInt() != 9){
-                    rendererRef.value?.columnEvent = data[2].toInt()
-                    rendererRef.value?.hasEventOccured = true;
-                }
-
+                rendererRef.value?.columnEvent = data[2].toInt()
+                rendererRef.value?.hasEventOccured = data[2].toInt() != 9
                 if(data[0] == "r"){
                     rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
                 }
@@ -230,11 +245,8 @@ fun Game(
             isConnected.value = bluetoothManager.value.connectToDevice("airdrums")
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-
-                if (data[2].toInt() != 9){
-                    rendererRef.value?.columnEvent = data[2].toInt()
-                    rendererRef.value?.hasEventOccured = true;
-                }
+                rendererRef.value?.columnEvent = data[2].toInt()
+                rendererRef.value?.hasEventOccured = data[2].toInt() != 9
                 if(data[0] == "r"){
                     rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
                 }
@@ -299,6 +311,7 @@ fun LevelEnd(
             message.value = "Your statistics cannot be saved more than one time"
         }
     }
+    val levelStatistics by levelStatisticviewModel.selectUser(userID).collectAsState(emptyList())
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -328,6 +341,15 @@ fun LevelEnd(
             Text("play again")
         }
 
+        Text("All Player Statistics")
+
+        LazyColumn {
+            items(levelStatistics) { levelStatistic ->
+                Row {
+                    Text("Date: ${levelStatistic.date} points: ${levelStatistic.points} missed: ${levelStatistic.missed}")
+                }
+            }
+        }
     }
 }
 
