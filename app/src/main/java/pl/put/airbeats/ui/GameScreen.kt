@@ -200,8 +200,12 @@ fun Game(
         if (isConnected.value) {
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-                rendererRef.value?.columnEvent = data[2].toInt()
-                rendererRef.value?.hasEventOccured = data[2].toInt() != 9
+
+                if (data[2].toInt() != 9){
+                    rendererRef.value?.columnEvent = data[2].toInt()
+                    rendererRef.value?.hasEventOccured = true;
+                }
+
                 if(data[0] == "r"){
                     rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
                 }
@@ -216,8 +220,11 @@ fun Game(
             isConnected.value = bluetoothManager.value.connectToDevice("airdrums")
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-                rendererRef.value?.columnEvent = data[2].toInt()
-                rendererRef.value?.hasEventOccured = data[2].toInt() != 9
+
+                if (data[2].toInt() != 9){
+                    rendererRef.value?.columnEvent = data[2].toInt()
+                    rendererRef.value?.hasEventOccured = true;
+                }
                 if(data[0] == "r"){
                     rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
                 }
