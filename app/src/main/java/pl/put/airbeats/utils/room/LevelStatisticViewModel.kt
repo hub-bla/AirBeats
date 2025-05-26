@@ -15,6 +15,12 @@ class LevelStatisticViewModel(
         }
     }
 
+    fun delete(levelStatistics: LevelStatisticEntity) {
+        viewModelScope.launch {
+            dao.delete(levelStatistics)
+        }
+    }
+
     fun selectUser(userID: String): Flow<List<LevelStatisticEntity>> {
         return dao.getUser(userID)
     }

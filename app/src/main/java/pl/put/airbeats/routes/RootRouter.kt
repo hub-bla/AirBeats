@@ -19,6 +19,7 @@ import pl.put.airbeats.ui.LevelsScreen
 import pl.put.airbeats.ui.LoginScreen
 import pl.put.airbeats.ui.RemindersScreen
 import pl.put.airbeats.ui.SettingsScreen
+import pl.put.airbeats.ui.StatisticsScreen
 import pl.put.airbeats.utils.room.LevelStatisticViewModel
 
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
@@ -60,4 +61,8 @@ fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
             RemindersScreen(navController)
         }
 
-}}
+        composable(route = Screen.Statistics.route) {
+            StatisticsScreen(levelStatisticviewModel)
+        }
+    }
+}

@@ -267,25 +267,32 @@ fun LevelEnd(
     levelStatisticviewModel: LevelStatisticViewModel,
     modifier: Modifier = Modifier,
     ) {
+    val hasSavedStatistics = remember { mutableStateOf(false) }
+    val message = remember { mutableStateOf("") }
     val userID = LocalUser.current.value
 
     val onSave = {
-        val formater = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-        val newLevelStatistcRow = LevelStatisticEntity(
-            userID = userID,
-            songName = songName,
-            difficulty = difficulty,
-            date = LocalDateTime.now().format(formater),
-            points = stats.points,
-            perfect = stats.perfect,
-            great = stats.great,
-            good = stats.good,
-            missed = stats.missed,
-            maxCombo = stats.maxCombo
-        )
-        levelStatisticviewModel.insert(newLevelStatistcRow)
+        if(!hasSavedStatistics.value){
+            val formater = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+            val newLevelStatistcRow = LevelStatisticEntity(
+                userID = userID,
+                songName = songName,
+                difficulty = difficulty,
+                date = LocalDateTime.now().format(formater),
+                points = stats.points,
+                perfect = stats.perfect,
+                great = stats.great,
+                good = stats.good,
+                missed = stats.missed,
+                maxCombo = stats.maxCombo
+            )
+            levelStatisticviewModel.insert(newLevelStatistcRow)
+            hasSavedStatistics.value = true
+            message.value = "Your statistics have been saved"
+        } else {
+            message.value = "Your statistics cannot be saved more than one time"
+        }
     }
-    val levelStatistics by levelStatisticviewModel.selectUser(userID).collectAsState(emptyList())
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -294,22 +301,34 @@ fun LevelEnd(
     ) {
         Text("Level ended\nPoints:${stats.points}")
 
+        Text("Level Statistics")
+        Text("Points: ${stats.points}")
+        Text("Max Combo: ${stats.maxCombo}")
+        Text("Perfect: ${stats.perfect}")
+        Text("Great: ${stats.great}")
+        Text("Good: ${stats.good}")
+        Text("Missed: ${stats.missed}")
+
         Button(onClick = onSave) {
             Text("save statistics")
+        }
+
+        if(message.value != ""){
+            Text(message.value)
         }
 
         Button(onClick = startGame) {
             Text("play again")
         }
 
-        Text("All Player Statistics")
-
-        LazyColumn {
-            items(levelStatistics) { levelStatistic ->
-                Row {
-                    Text("Date: ${levelStatistic.date} points: ${levelStatistic.points} missed: ${levelStatistic.missed}")
-                }
-            }
-        }
+//        Text("All Player Statistics")
+//
+//        LazyColumn {
+//            items(levelStatistics) { levelStatistic ->
+//                Row {
+//                    Text("Date: ${levelStatistic.date} points: ${levelStatistic.points} missed: ${levelStatistic.missed}")
+//                }
+//            }
+//        }
     }
 }

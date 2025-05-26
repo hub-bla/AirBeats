@@ -36,19 +36,22 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             Text("Streak: ")
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {navController.navigate(Screen.Levels.route)}) {
+                onClick = {navController.navigate(Screen.Levels.route)}
+            ) {
                 Text("Play")
             }
 
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {}) {
+                onClick = {navController.navigate(Screen.Statistics.route) }
+            ) {
                 Text("Game History")
             }
 
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {navController.navigate(Screen.Settings.route)}) {
+                onClick = {navController.navigate(Screen.Settings.route)}
+            ) {
                 Text("Settings")
             }
         }
