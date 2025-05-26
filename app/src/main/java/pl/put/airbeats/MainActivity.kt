@@ -30,6 +30,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
+import com.facebook.FacebookSdk
 import pl.put.airbeats.utils.room.LevelStatisticDatabase
 import pl.put.airbeats.utils.room.LevelStatisticViewModel
 
@@ -61,7 +62,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
-
+        FacebookSdk.sdkInitialize(this)
+        FacebookSdk.fullyInitialize()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(

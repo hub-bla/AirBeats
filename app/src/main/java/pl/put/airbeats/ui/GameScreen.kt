@@ -36,10 +36,25 @@ import pl.put.airbeats.utils.room.LevelStatisticEntity
 import pl.put.airbeats.utils.room.LevelStatisticViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.core.net.toUri
+import android.app.Activity
+import android.net.Uri
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.facebook.share.model.ShareLinkContent
+import com.facebook.share.widget.ShareDialog
 
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
-fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: LevelStatisticViewModel, modifier: Modifier = Modifier) {
+fun GameScreen(
+    songName: String,
+    difficulty: String,
+    levelStatisticviewModel: LevelStatisticViewModel,
+    modifier: Modifier = Modifier
+) {
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
     var bpm = remember { mutableIntStateOf(0) }
     var audioLink = remember { mutableStateOf("") }
@@ -51,14 +66,14 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
         gameState = 2
     }
 
-    when(gameState) {
+    when (gameState) {
         0 -> Menu(
-            {newNoteTracks ->  noteTracks.value = newNoteTracks},
-            {newBpm ->  bpm.intValue = newBpm},
-            {newAudioLink ->  audioLink.value = newAudioLink},
+            { newNoteTracks -> noteTracks.value = newNoteTracks },
+            { newBpm -> bpm.intValue = newBpm },
+            { newAudioLink -> audioLink.value = newAudioLink },
             songName,
             difficulty,
-            {gameState = 1},
+            { gameState = 1 },
             modifier,
         )
 
@@ -69,11 +84,12 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
             onLevelEnd,
             modifier,
         )
+
         2 -> LevelEnd(
             songName,
             difficulty,
             levelStatistics!!,
-            {gameState = 1},
+            { gameState = 1 },
             levelStatisticviewModel,
             modifier,
         )
@@ -82,14 +98,14 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
 
 @Composable
 fun Menu(
-        changeNoteTracks: (Map<String, NoteTrack>) -> Unit,
-        changeBpm: (Int) -> Unit,
-        changeAudioLink: (String) -> Unit,
-        songName: String,
-        difficulty: String,
-        startGame: () -> Unit,
-        modifier: Modifier = Modifier,
-    ) {
+    changeNoteTracks: (Map<String, NoteTrack>) -> Unit,
+    changeBpm: (Int) -> Unit,
+    changeAudioLink: (String) -> Unit,
+    songName: String,
+    difficulty: String,
+    startGame: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var isLoading = remember { mutableStateOf(true) }
     var error = remember { mutableStateOf("") }
 
@@ -106,9 +122,9 @@ fun Menu(
                 Log.d("Firestore success", "Song document loaded")
                 midiLink = result.get("midi").toString()
                 audioLink = result.get("audio").toString()
-                bpm = result.get("bpm", ).toString().toInt()
+                bpm = result.get("bpm").toString().toInt()
 
-                if(midiLink == "") {
+                if (midiLink == "") {
                     Log.d("Game", "Song document is empty")
                     isLoading.value = false
                     error.value = "Song data is not available."
@@ -157,12 +173,12 @@ fun Menu(
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 fun Game(
-        audioLink: String,
-        noteTracks: Map<String, NoteTrack>,
-        bpm: Int,
-        onLevelEnd: (LevelStatistics) -> Unit,
-        modifier: Modifier = Modifier,
-    ) {
+    audioLink: String,
+    noteTracks: Map<String, NoteTrack>,
+    bpm: Int,
+    onLevelEnd: (LevelStatistics) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val glViewRef = remember { mutableStateOf<MyGLSurfaceView?>(null) }
     val rendererRef = remember { mutableStateOf<MyGLRenderer?>(null) }
     val isConnected = remember { mutableStateOf(false) }
@@ -176,10 +192,9 @@ fun Game(
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
                 rendererRef.value?.columnEvent = data[2].toInt()
                 rendererRef.value?.hasEventOccured = data[2].toInt() != 9
-                if(data[0] == "r"){
+                if (data[0] == "r") {
                     rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
-                }
-                else if (data[0] == "l"){
+                } else if (data[0] == "l") {
                     rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
                 }
 
@@ -192,10 +207,9 @@ fun Game(
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
                 rendererRef.value?.columnEvent = data[2].toInt()
                 rendererRef.value?.hasEventOccured = data[2].toInt() != 9
-                if(data[0] == "r"){
+                if (data[0] == "r") {
                     rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
-                }
-                else if (data[0] == "l"){
+                } else if (data[0] == "l") {
                     rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
                 }
                 Log.d("DATARECV", data.toString())
@@ -205,7 +219,7 @@ fun Game(
 
     AndroidView(
         modifier = modifier.fillMaxSize(),
-        factory =  { context ->
+        factory = { context ->
             val glView = MyGLSurfaceView(context, noteTracks, bpm, { stats ->
                 onLevelEnd(stats)
                 bluetoothManager.value.disconnect()
@@ -225,7 +239,7 @@ fun LevelEnd(
     startGame: () -> Unit,
     levelStatisticviewModel: LevelStatisticViewModel,
     modifier: Modifier = Modifier,
-    ) {
+) {
     val userID = LocalUser.current.value
 
 
@@ -252,6 +266,7 @@ fun LevelEnd(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        FacebookShareButton(stats.points)
         Text("Level ended\nPoints:${stats.points}")
 
         Button(onClick = onSave) {
@@ -271,5 +286,54 @@ fun LevelEnd(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FacebookShareButton(
+    points: Float,
+    urlToShare: String = "https://github.com/hub-bla/AirBeats"
+) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val quote = "Got $points points in AirBeats!"
+    var shareDialog by remember { mutableStateOf<ShareDialog?>(null) }
+
+    LaunchedEffect(Unit) {
+        if (activity != null) {
+            val canShow = try {
+                ShareDialog.canShow(ShareLinkContent::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+            if (canShow) {
+                shareDialog = ShareDialog(activity)
+            } else {
+                Log.d("FBShareButton", "Cannot show ShareDialog")
+            }
+        } else {
+            Log.d("FBShareButton", "Context is not an Activity")
+        }
+    }
+
+    Button(
+        onClick = {
+            if (shareDialog == null) {
+                Log.d("FBShareButton", "ShareDialog not initialized")
+                return@Button
+            }
+            val content = ShareLinkContent.Builder()
+                .setContentUrl(urlToShare.toUri())
+                .setQuote(quote)
+                .build()
+
+            shareDialog?.show(content)
+        },
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+    ) {
+        Text("Share on Facebook")
     }
 }
