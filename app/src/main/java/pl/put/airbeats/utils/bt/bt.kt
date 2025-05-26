@@ -49,19 +49,36 @@ class BluetoothManager() {
         }
     }
 
-    fun startReceivingLoop(glView:GLSurfaceView, onData: (String) -> Unit) {
+    fun startReceivingLoop(glView:GLSurfaceView, onData: (List<String>) -> Unit) {
         isReceiving.set(true)
         receivingThread = Thread {
             val buffer = ByteArray(1024)
+            val messageBuffer = StringBuilder()
             while (isReceiving.get()) {
                 try {
                     val bytesRead = inputStream?.read(buffer) ?: -1
                     if (bytesRead > 0) {
                         val data = String(buffer, 0, bytesRead)
                         Log.d("BluetoothManager", "Received: $data")
-                        // glEventLoop Pipe
-                        glView.queueEvent {
-                            onData(data)
+                        messageBuffer.append(data)
+
+                        while (messageBuffer.length >= 5) {
+                            val potentialMessage = messageBuffer.substring(0, 5)
+                            if (potentialMessage[0] in listOf('r','l')) {
+                                // glEventLoop Pipe
+                                glView.queueEvent {
+                                    onData(
+                                        listOf(
+                                        potentialMessage[0].toString(),
+                                        potentialMessage.slice(1..3),
+                                        potentialMessage[4].toString()
+                                    ))
+                                }
+                                messageBuffer.delete(0, 5)
+                            }
+                            else{
+                                messageBuffer.delete(0, 1)
+                            }
                         }
                     }
                 } catch (e: Exception) {

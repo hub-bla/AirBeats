@@ -168,21 +168,37 @@ fun Game(
     val isConnected = remember { mutableStateOf(false) }
     val bluetoothManager = remember { mutableStateOf(BluetoothManager()) }
 
+
+    //array [stick id][float pos][event]
     LaunchedEffect(isConnected) {
         if (isConnected.value) {
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-                rendererRef.value?.columnEvent = data.toInt()
-                rendererRef.value?.hasEventOccured = true
-                Log.d("DATARECV", data)
+                rendererRef.value?.columnEvent = data[2].toInt()
+                rendererRef.value?.hasEventOccured = data[2].toInt() != 9
+                if(data[0] == "r"){
+                    rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
+                }
+                else if (data[0] == "l"){
+                    rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
+                }
+
+
+                Log.d("DATARECV", data.toString())
             }
         } else {
             isConnected.value = bluetoothManager.value.connectToDevice("airdrums")
             Log.d("INIT BLE L:ISTening", "")
             bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-                rendererRef.value?.columnEvent = data.toInt()
-                rendererRef.value?.hasEventOccured = true
-                Log.d("DATARECV", data)
+                rendererRef.value?.columnEvent = data[2].toInt()
+                rendererRef.value?.hasEventOccured = data[2].toInt() != 9
+                if(data[0] == "r"){
+                    rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
+                }
+                else if (data[0] == "l"){
+                    rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
+                }
+                Log.d("DATARECV", data.toString())
             }
         }
     }
