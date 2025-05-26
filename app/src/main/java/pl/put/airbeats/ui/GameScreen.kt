@@ -1,6 +1,10 @@
 package pl.put.airbeats.ui
 
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.util.Log
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,9 +23,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.ui.components.ErrorComponent
@@ -43,6 +49,7 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
     var bpm = remember { mutableIntStateOf(0) }
     var audioLink = remember { mutableStateOf("") }
+    var mediaPlayer = remember { mutableStateOf(MediaPlayer()) }
     var gameState by remember { mutableStateOf(0) }
     var levelStatistics by remember { mutableStateOf<LevelStatistics?>(null) }
 
@@ -55,7 +62,8 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
         0 -> Menu(
             {newNoteTracks ->  noteTracks.value = newNoteTracks},
             {newBpm ->  bpm.intValue = newBpm},
-            {newAudioLink ->  audioLink.value = newAudioLink},
+            {newMediaPlayer ->  mediaPlayer.value = newMediaPlayer},
+//            {newAudioLink ->  audioLink.value = newAudioLink},
             songName,
             difficulty,
             {gameState = 1},
@@ -63,17 +71,19 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
         )
 
         1 -> Game(
-            audioLink.value,
+            mediaPlayer.value,
+//            audioLink.value,
             noteTracks.value,
             bpm.intValue,
             onLevelEnd,
             modifier,
         )
         2 -> LevelEnd(
+            mediaPlayer.value,
             songName,
             difficulty,
             levelStatistics!!,
-            {gameState = 1},
+            {gameState = 0},
             levelStatisticviewModel,
             modifier,
         )
@@ -82,13 +92,14 @@ fun GameScreen(songName: String, difficulty: String, levelStatisticviewModel: Le
 
 @Composable
 fun Menu(
-        changeNoteTracks: (Map<String, NoteTrack>) -> Unit,
-        changeBpm: (Int) -> Unit,
-        changeAudioLink: (String) -> Unit,
-        songName: String,
-        difficulty: String,
-        startGame: () -> Unit,
-        modifier: Modifier = Modifier,
+    changeNoteTracks: (Map<String, NoteTrack>) -> Unit,
+    changeBpm: (Int) -> Unit,
+    changeMediaPlayer: (MediaPlayer) -> Unit,
+//        changeAudioLink: (String) -> Unit,
+    songName: String,
+    difficulty: String,
+    startGame: () -> Unit,
+    modifier: Modifier = Modifier,
     ) {
     var isLoading = remember { mutableStateOf(true) }
     var error = remember { mutableStateOf("") }
@@ -106,6 +117,7 @@ fun Menu(
                 Log.d("Firestore success", "Song document loaded")
                 midiLink = result.get("midi").toString()
                 audioLink = result.get("audio").toString()
+//                audioLink = result.get("midi").toString()
                 bpm = result.get("bpm", ).toString().toInt()
 
                 if(midiLink == "") {
@@ -119,11 +131,29 @@ fun Menu(
                     val midi = MidiReader()
                     val noteTracks = midi.read(midiLink, bpm)
                     Log.d("Game", "Note Tracks loaded")
-                    changeAudioLink(audioLink)
+//                    changeAudioLink(audioLink)
                     changeNoteTracks(noteTracks)
                     changeBpm(bpm)
                 }
-                isLoading.value = false
+                val mediaPlayer = MediaPlayer().apply {
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .build()
+                    )
+                    setDataSource(audioLink)
+                    prepare()
+                    setOnPreparedListener {
+                        Log.d("audioDelay", "MediaPlayer is prepared")
+                        isLoading.value = false
+                    }
+//                    setOnCompletionListener {
+//                        it.release()
+//                    }
+                }
+                changeMediaPlayer(mediaPlayer)
+//                isLoading.value = false
             }.addOnFailureListener {
                 Log.d("Firestore failure", "couldn't fetch data")
                 isLoading.value = false
@@ -157,7 +187,8 @@ fun Menu(
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 fun Game(
-        audioLink: String,
+        mediaPlayer: MediaPlayer,
+//        audioLink: String,
         noteTracks: Map<String, NoteTrack>,
         bpm: Int,
         onLevelEnd: (LevelStatistics) -> Unit,
@@ -168,6 +199,11 @@ fun Game(
     val isConnected = remember { mutableStateOf(false) }
     val bluetoothManager = remember { mutableStateOf(BluetoothManager()) }
 
+    BackHandler {
+        onLevelEnd(LevelStatistics())
+        bluetoothManager.value.disconnect()
+        mediaPlayer.stop()
+    }
 
     //array [stick id][float pos][event]
     LaunchedEffect(isConnected) {
@@ -206,10 +242,14 @@ fun Game(
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory =  { context ->
-            val glView = MyGLSurfaceView(context, noteTracks, bpm, { stats ->
-                onLevelEnd(stats)
-                bluetoothManager.value.disconnect()
-            })
+            val glView = MyGLSurfaceView(context, noteTracks, bpm,
+                { mediaPlayer.start() },
+                { mediaPlayer.stop() },
+                { stats ->
+                    onLevelEnd(stats)
+                    bluetoothManager.value.disconnect()
+                }
+            )
             glViewRef.value = glView
             rendererRef.value = glView.renderer
             glView
@@ -219,6 +259,7 @@ fun Game(
 
 @Composable
 fun LevelEnd(
+    mediaPlayer: MediaPlayer,
     songName: String,
     difficulty: String,
     stats: LevelStatistics,
@@ -227,7 +268,6 @@ fun LevelEnd(
     modifier: Modifier = Modifier,
     ) {
     val userID = LocalUser.current.value
-
 
     val onSave = {
         val formater = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")

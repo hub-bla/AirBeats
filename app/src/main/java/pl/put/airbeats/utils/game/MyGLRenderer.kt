@@ -9,6 +9,8 @@ import android.opengl.Matrix
 import android.os.SystemClock
 import android.util.Log
 import pl.put.airbeats.utils.midi.NoteTrack
+import java.util.Timer
+import kotlin.concurrent.schedule
 import kotlin.math.abs
 
 // Game related constants
@@ -50,8 +52,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     // Level variables
     private var noteTracks: Map<String, NoteTrack>
 //    private var bpm: Int
+    private val playAudio: () -> Unit
     private val onLevelEnd: (LevelStatistics) -> Unit
-    // TODO audio link
 
     // Level statistics variables
     private var stats = LevelStatistics()
@@ -81,9 +83,10 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     val leftStickColor = floatArrayOf(0.133f, 0.818f, 0.133f, 1.0f)
     val rightStickColor = floatArrayOf(0.818f, 0.818f, 0.133f, 1.0f)
 
-    constructor(noteTracks: Map<String, NoteTrack>, bpm: Int, onLevelEnd: (LevelStatistics) -> Unit,) {
+    constructor(noteTracks: Map<String, NoteTrack>, bpm: Int, playAudio: () -> Unit, onLevelEnd: (LevelStatistics) -> Unit,) {
         this.noteTracks = noteTracks
 //        this.bpm = bpm
+        this.playAudio = playAudio
         this.onLevelEnd = onLevelEnd
     }
 
@@ -156,6 +159,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
                 // Calculate height of tile based on duration of note
                 val noteHeight = (noteDuration.toFloat() * TILE_SPEED) * 0.95f
                 val startPositionYOffset =  noteHeight/2f
+//                val startPositionYOffset =  0
 
                 // Calculate y coordinate of tile based on note timestamp
                 val distance = noteStartTime.toFloat() * TILE_SPEED
@@ -217,7 +221,13 @@ class MyGLRenderer : GLSurfaceView.Renderer {
             vpMatrix,
             rightStickColor)
 
+        val audioDelay = (START_DELAY + TILE_ON_SCREEN_TIME * ((2 + LINE_HEIGHT)/ 2)).toLong()
+        Log.d("audioDelay", "$audioDelay")
+
         lastTime = SystemClock.uptimeMillis()
+        Timer("SettingUp", false).schedule(audioDelay) {
+            playAudio()
+        }
     }
 
     override fun onDrawFrame(unused: GL10) {
