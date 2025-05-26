@@ -1,23 +1,29 @@
 package pl.put.airbeats.routes
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+
+import androidx.navigation.NavType
 import androidx.lifecycle.viewmodel.compose.viewModel
+
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import pl.put.airbeats.LocalUser
+import pl.put.airbeats.ui.GameScreen
 import pl.put.airbeats.ui.HomeScreen
 import pl.put.airbeats.ui.LevelsScreen
 import pl.put.airbeats.ui.LoginScreen
 import pl.put.airbeats.ui.RemindersScreen
 import pl.put.airbeats.ui.SettingsScreen
+import pl.put.airbeats.utils.room.LevelStatisticViewModel
 
+@androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
-fun RootRouter() {
+fun RootRouter(levelStatisticviewModel: LevelStatisticViewModel) {
     val navController = rememberNavController()
     val userState = LocalUser.current
     val isLoggedIn = Firebase.auth.currentUser?.uid == null || userState.value == ""
@@ -33,11 +39,22 @@ fun RootRouter() {
             LoginScreen(Firebase.auth, navController)
         }
         composable(route = Screen.Levels.route) {
-            LevelsScreen()
+            LevelsScreen(navController)
         }
         composable(route = Screen.Settings.route) {
             SettingsScreen(navController)
         }
+
+        composable(
+            route = "${Screen.Game.route}/{songName}/{difficulty}",
+            arguments = listOf(
+                navArgument("songName") { type = NavType.StringType },
+                navArgument("difficulty") { type = NavType.StringType }
+            )) { backStackEntry ->
+            val songName: String = backStackEntry.arguments?.getString("songName") ?: ""
+            val difficulty: String = backStackEntry.arguments?.getString("difficulty") ?: ""
+            GameScreen(songName, difficulty, levelStatisticviewModel)
+
         composable(route = Screen.Settings.route + "/reminders") {
             RemindersScreen(navController)
         }

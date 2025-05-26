@@ -4,10 +4,8 @@ import android.util.Log
 import dev.atsushieno.ktmidi.Midi1Music
 import dev.atsushieno.ktmidi.read
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import java.io.InputStream
 
 val gmDrumMap = hashMapOf(
     35 to "Acoustic Bass Drum", 36 to "Bass Drum 1", 37 to "Side Stick", 38 to "Acoustic Snare",
@@ -58,6 +56,7 @@ class MidiReader {
         music.tracks.forEachIndexed { index, track ->
             Log.d("MidiTrack", "Track $index: ${track.events}")
 
+            var noteStartTime: Double = 0.0
             track.events.forEach { event ->
                 val type = when (event.message.statusCode.toInt() and 0xF0) {
                     0x80 -> "Note Off"
@@ -71,15 +70,17 @@ class MidiReader {
                 }
                 if (type == "Note On" || type == "Note Off") { // Note On event
                     val noteNumber = event.message.msb // First data byte: note number
+                    val noteName = gmDrumMap.getOrDefault(noteNumber.toInt(), "No name")
+
 //                val velocity = event.message.lsb  // Second data byte: velocity
                     val time =
                         event.deltaTime.toDouble() * (MILISECONDS_IN_MIN / (ppqn * bpm.toDouble()))
                     culTime += time
                     if (type == "Note On") {
-                        val noteName = gmDrumMap.getOrDefault(noteNumber.toInt(), "No name")
-
+                        noteStartTime = culTime
+                    }else{
                         val noteTrack = noteTracks.getOrDefault(noteName, NoteTrack())
-                        noteTrack.addNoteOn(culTime)
+                        noteTrack.addNoteOn(noteStartTime to culTime)
                         noteTracks[noteName] = noteTrack
                     }
                     Log.d(
