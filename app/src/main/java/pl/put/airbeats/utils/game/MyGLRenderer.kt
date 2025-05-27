@@ -8,6 +8,8 @@ import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.SystemClock
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import pl.put.airbeats.utils.midi.NoteTrack
 import java.util.Timer
 import kotlin.concurrent.schedule
@@ -57,6 +59,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     // Level statistics variables
     private var stats = LevelStatistics()
+    private var initialized = false
 
 //    private var points = 0f
 //    private var maxCombo = 0
@@ -90,7 +93,33 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         this.onLevelEnd = onLevelEnd
     }
 
+    private var gamePaused = false
+    private var pauseTime = 0L
+
+    fun pauseGame() {
+        gamePaused = true
+        pauseTime = System.currentTimeMillis()
+    }
+
+    fun resumeGame() {
+        if (gamePaused) {
+            val pauseDuration = System.currentTimeMillis() - pauseTime
+
+            // Adjust lastTime to account for the pause duration
+            // This prevents a large time jump in the next frame
+            lastTime += pauseDuration
+
+            // Reset pause state
+            gamePaused = false
+            pauseTime = 0L
+
+            Log.d("Game", "Game resumed after ${pauseDuration}ms pause")
+        }
+    }
+
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
+
+
         // Creates shader program
         this.shaderProgram = ShaderProgram()
 
@@ -143,46 +172,48 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Create and setup all Tile objects on level
         val position = FloatArray(16)
         var currentColumn = 0
-        for((_, noteTrack) in noteTracks){
-            if(currentColumn >= numberOfColumns){
-                break
-            }
-            val startPosition = startPositions[currentColumn]
-            val (x, y, z) = startPosition
-            val color = tileColors[currentColumn]
-            val tilesInColumn = mutableListOf<Tile>()
-            for (noteDurationTimestamp in noteTrack.noteOnsTimesInMs){
-                // Calculate duration of note
-                val (noteStartTime, noteEndTime) = noteDurationTimestamp
-                val noteDuration = noteEndTime - noteStartTime
+        if(!initialized) {
+            initialized = true
+            for ((_, noteTrack) in noteTracks) {
+                if (currentColumn >= numberOfColumns) {
+                    break
+                }
+                val startPosition = startPositions[currentColumn]
+                val (x, y, z) = startPosition
+                val color = tileColors[currentColumn]
+                val tilesInColumn = mutableListOf<Tile>()
+                for (noteDurationTimestamp in noteTrack.noteOnsTimesInMs) {
+                    // Calculate duration of note
+                    val (noteStartTime, noteEndTime) = noteDurationTimestamp
+                    val noteDuration = noteEndTime - noteStartTime
 
-                // Calculate height of tile based on duration of note
-                val noteHeight = (noteDuration.toFloat() * TILE_SPEED) * 0.95f
-                val startPositionYOffset =  noteHeight/2f
+                    // Calculate height of tile based on duration of note
+                    val noteHeight = (noteDuration.toFloat() * TILE_SPEED) * 0.95f
+                    val startPositionYOffset = noteHeight / 2f
 //                val startPositionYOffset =  0
 
-                // Calculate y coordinate of tile based on note timestamp
-                val distance = noteStartTime.toFloat() * TILE_SPEED
-                val yDistance = y + distance + startPositionYOffset
+                    // Calculate y coordinate of tile based on note timestamp
+                    val distance = noteStartTime.toFloat() * TILE_SPEED
+                    val yDistance = y + distance + startPositionYOffset
 
-                // Calculate tile position
-                Matrix.setIdentityM(position, 0)
-                Matrix.translateM(position, 0, x, yDistance, z)
+                    // Calculate tile position
+                    Matrix.setIdentityM(position, 0)
+                    Matrix.translateM(position, 0, x, yDistance, z)
 
-                // Create Tile Object
-                val tile = Tile(shaderProgram, tileWidth, noteHeight, position, vpMatrix, color)
-                tilesInColumn.add(tile)
-                stats.addTile()
+                    // Create Tile Object
+                    val tile = Tile(shaderProgram, tileWidth, noteHeight, position, vpMatrix, color)
+                    tilesInColumn.add(tile)
+                    stats.addTile()
+                }
+                tiles.add(tilesInColumn)
+                currentColumn++
             }
-            tiles.add(tilesInColumn)
-            currentColumn++
-        }
-        for(i in tiles.size..<numberOfColumns){
-            val tilesInColumn = mutableListOf<Tile>()
-            tiles.add(tilesInColumn)
-        }
+            for (i in tiles.size..<numberOfColumns) {
+                val tilesInColumn = mutableListOf<Tile>()
+                tiles.add(tilesInColumn)
+            }
 
-
+        }
         // Calculate line position
         Matrix.setIdentityM(position, 0)
         Matrix.translateM(position, 0, 0f, LINE_HEIGHT, -0.1f)
@@ -232,6 +263,10 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     override fun onDrawFrame(unused: GL10) {
         // Redraw background color
+        if (gamePaused) {
+            // Don't update game logic when paused, but still render the last frame
+            return
+        }
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
         val currentTime = SystemClock.uptimeMillis()
