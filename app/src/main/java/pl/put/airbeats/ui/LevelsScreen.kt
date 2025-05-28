@@ -1,6 +1,7 @@
 package pl.put.airbeats.ui
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -23,21 +24,47 @@ import com.google.firebase.firestore.firestore
 import pl.put.airbeats.routes.Screen
 import pl.put.airbeats.ui.components.ErrorComponent
 import pl.put.airbeats.ui.components.Loading
+import pl.put.airbeats.utils.LottieLoading
 
 @Composable
 fun LevelsScreen(navController: NavController, modifier: Modifier = Modifier) {
     var difficulty = remember { mutableStateOf("") }
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
 
-    when (difficulty.value) {
-        "" -> SelectDifficulty(onDifficultySelected = { newDifficulty ->
-            difficulty.value = newDifficulty
-        }, modifier)
 
-        else -> SongsInDifficulty(navController, difficulty, modifier)
+    LaunchedEffect(savedStateHandle) {
+        savedStateHandle?.let { handle ->
+            val savedDifficulty = handle.get<String>("difficulty")
+            if (!savedDifficulty.isNullOrEmpty()) {
+                difficulty.value = savedDifficulty
+
+                handle.remove<String>("difficulty")
+            }
+        }
     }
+    when (difficulty.value) {
+        "" -> {
+            SelectDifficulty(onDifficultySelected = { newDifficulty ->
+                difficulty.value = newDifficulty
+            }, modifier)
 
+            BackHandler {
+                navController.navigateUp()
+            }
+        }
+
+        else -> {
+            SongsInDifficulty(
+                navController = navController,
+                difficulty = difficulty,
+                onBackToDifficulty = {
+                    difficulty.value = ""
+                },
+                modifier = modifier
+            )
+        }
+    }
 }
-
 
 @Composable
 fun SelectDifficulty(onDifficultySelected: (String) -> Unit, modifier: Modifier = Modifier) {
@@ -69,7 +96,6 @@ fun SelectDifficulty(onDifficultySelected: (String) -> Unit, modifier: Modifier 
                 Text("Hard")
             }
         }
-
     }
 }
 
@@ -77,11 +103,17 @@ fun SelectDifficulty(onDifficultySelected: (String) -> Unit, modifier: Modifier 
 fun SongsInDifficulty(
     navController: NavController,
     difficulty: MutableState<String>,
+    onBackToDifficulty: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler {
+        onBackToDifficulty()
+    }
+
     var songs = remember { mutableStateOf<List<String>>(emptyList()) }
     var isLoading = remember { mutableStateOf(true) }
     var error = remember { mutableStateOf("") }
+
     LaunchedEffect(difficulty.value) {
         val db = Firebase.firestore
 
@@ -90,11 +122,6 @@ fun SongsInDifficulty(
             .addOnSuccessListener { result ->
                 val fetchedSongs = result.map { document ->
                     document.id
-//                    val midiLink = document.getString("midi").toString()
-//                    val audioLink = document.getString("audio").toString()
-//                    val bpm = document.getLong("bpm")!!.toInt()
-//
-//                    SongData(songName, midiLink, audioLink, bpm)
                 }
 
                 songs.value = fetchedSongs
@@ -104,7 +131,6 @@ fun SongsInDifficulty(
                 isLoading.value = false
                 error.value = "Couldn't fetch songs data."
             }
-
     }
 
     Column(
@@ -113,7 +139,7 @@ fun SongsInDifficulty(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isLoading.value) {
-            Loading()
+            LottieLoading(modifier = Modifier.fillMaxSize(), message = "Loading songs...")
             return
         }
 
@@ -128,7 +154,6 @@ fun SongsInDifficulty(
         songs.value.forEach { song ->
             Song(navController, song, difficulty.value)
         }
-
     }
 }
 
@@ -139,5 +164,4 @@ fun Song(navController: NavController, songName: String, difficulty: String) {
     }) {
         Text(songName)
     }
-
 }

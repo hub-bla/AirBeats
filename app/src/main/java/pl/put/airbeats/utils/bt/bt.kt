@@ -64,7 +64,7 @@ class BluetoothManager() {
 
                         while (messageBuffer.length >= 5) {
                             val potentialMessage = messageBuffer.substring(0, 5)
-                            if (potentialMessage[0] in listOf('r','l')) {
+                            if (potentialMessage[0] in listOf('r','l', 'c')) {
                                 // glEventLoop Pipe
                                 glView.queueEvent {
                                     onData(

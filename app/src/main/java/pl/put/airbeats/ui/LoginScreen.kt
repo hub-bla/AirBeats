@@ -57,6 +57,7 @@ import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
 import pl.put.airbeats.ui.components.ErrorComponent
 import pl.put.airbeats.ui.components.Loading
+import pl.put.airbeats.utils.LottieLoading
 
 
 @Composable
@@ -206,7 +207,7 @@ fun LoginScreen(
         }
 
         if (isLoading) {
-            Loading()
+            LottieLoading(message = "Checking your credentials...", modifier = Modifier.fillMaxSize())
             return
         }
 

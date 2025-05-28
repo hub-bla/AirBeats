@@ -1,7 +1,6 @@
 package pl.put.airbeats
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,7 +17,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import pl.put.airbeats.routes.RootRouter
 import pl.put.airbeats.ui.theme.AirBeatsTheme
-import pl.put.airbeats.utils.midi.MidiReader
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -26,12 +24,12 @@ import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
+import com.facebook.FacebookSdk
 import pl.put.airbeats.utils.room.LevelStatisticDatabase
-import pl.put.airbeats.utils.room.LevelStatisticViewModel
+import pl.put.airbeats.utils.room.AirBeatsViewModel
 
 
 val LocalUser = compositionLocalOf<MutableState<String>> { mutableStateOf("") }
@@ -44,14 +42,14 @@ class MainActivity : ComponentActivity() {
             "AirBeats-database"
         ).build()
     }
-    val levelStatisticviewModel: LevelStatisticViewModel by viewModels<LevelStatisticViewModel>(
+    val levelStatisticviewModel: AirBeatsViewModel by viewModels<AirBeatsViewModel>(
         factoryProducer = {
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(
                     modelClass: Class<T>
                 ): T {
                     @Suppress("UNCHECKED_CAST")
-                    return LevelStatisticViewModel(db.dao()) as T
+                    return AirBeatsViewModel(db.dao()) as T
                 }
             }
         }
@@ -61,7 +59,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
-
+        FacebookSdk.sdkInitialize(this)
+        FacebookSdk.setAutoInitEnabled(true)
+        FacebookSdk.fullyInitialize()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(

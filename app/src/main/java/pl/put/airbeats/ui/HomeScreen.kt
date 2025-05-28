@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import pl.put.airbeats.utils.streak.StreakData
 import pl.put.airbeats.utils.streak.getStreak
+import pl.put.airbeats.utils.LottieLoading
 
 @Composable
 fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
@@ -39,21 +40,25 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             Text("Streak: " + streak.streak.toString())
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {navController.navigate(Screen.Levels.route)}) {
+                onClick = {navController.navigate(Screen.Levels.route)}
+            ) {
                 Text("Play")
             }
 
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {}) {
+                onClick = {navController.navigate(Screen.Statistics.route) }
+            ) {
                 Text("Game History")
             }
 
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = {navController.navigate(Screen.Settings.route)}) {
+                onClick = {navController.navigate(Screen.Settings.route)}
+            ) {
                 Text("Settings")
             }
+            LottieLoading(size = 0.dp)
         }
 
     }
