@@ -15,13 +15,16 @@ import androidx.navigation.NavController
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import pl.put.airbeats.utils.streak.StreakData
+import pl.put.airbeats.utils.streak.getStreak
 import pl.put.airbeats.utils.LottieLoading
 
 @Composable
 fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
     val userState = LocalUser.current
-
+    val streak = getStreak(LocalContext.current) ?: StreakData(0, "0000-00-00")
     if (userState.value == "") {
         navController.navigate(Screen.Login.route)
     }
@@ -34,7 +37,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Streak: ")
+            Text("Streak: " + streak.streak.toString())
             Button(
                 modifier = Modifier.fillMaxWidth(0.6f),
                 onClick = {navController.navigate(Screen.Levels.route)}

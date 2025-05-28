@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.gson)
     implementation(libs.google.play.services.auth)
     implementation(libs.facebook.sdk)
     implementation("com.airbnb.android:lottie-compose:6.6.6")
