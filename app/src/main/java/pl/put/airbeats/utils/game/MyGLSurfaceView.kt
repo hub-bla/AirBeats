@@ -41,7 +41,7 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         // Create an OpenGL ES 2.0 context
         setEGLContextClientVersion(2)
 
-        renderer = MyGLRenderer(noteTrack, bpm, playAudio, onLevelEnd)
+        renderer = MyGLRenderer(noteTrack, bpm, playAudio, onLevelEnd, isSavingEnergy)
 
         if(isSavingEnergy) {
             Log.d("EnergySaving", "true")
