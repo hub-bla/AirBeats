@@ -1,4 +1,3 @@
-
 package pl.put.airbeats.ui
 
 import android.media.AudioAttributes
@@ -50,6 +49,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.graphics.PixelFormat
 import android.net.Uri
 import android.view.WindowManager
 import androidx.compose.foundation.layout.*
@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavController
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
 import com.facebook.FacebookException
@@ -81,7 +82,9 @@ fun GameScreen(
     songName: String,
     difficulty: String,
     airBeatsViewModel: AirBeatsViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    onBackToSongs: (() -> Unit)? = null
 ) {
     var noteTracks = remember { mutableStateOf(emptyMap<String, NoteTrack>()) }
     var bpm = remember { mutableIntStateOf(0) }
@@ -114,6 +117,17 @@ fun GameScreen(
             onCancel = onCalibrationCancelled
         )
     }
+    BackHandler(
+        enabled = gameState == 0 || gameState == 2
+    ) {
+        val previousEntry = navController.previousBackStackEntry
+        Log.d("BackHandler", "Previous entry: $previousEntry")
+        Log.d("BackHandler", "Setting difficulty: $difficulty")
+
+        previousEntry?.savedStateHandle?.set("difficulty", difficulty)
+        navController.popBackStack()
+    }
+
 
     when (gameState) {
         0 -> Menu(
@@ -329,6 +343,7 @@ fun Menu(
         }
     }
 }
+
 fun Context.findActivity(): Activity? {
     var ctx = this
     while (ctx is android.content.ContextWrapper) {
@@ -357,10 +372,64 @@ fun Game(
     var isConnecting by remember { mutableStateOf(false) }
     var hasReceivedFirstMessage by remember { mutableStateOf(false) }
     var isGamePaused by remember { mutableStateOf(false) }
+    var gameStarted by remember { mutableStateOf(false) }
+    var mediaPlayerPosition by remember { mutableIntStateOf(0) }
+    var wasMediaPlayerPlaying by remember { mutableStateOf(false) }
     val bluetoothManager = remember { mutableStateOf(BluetoothManager()) }
+    var preventAutoResume by remember { mutableStateOf(false) }
 
     val isSavingEnergy by airBeatsViewModel.isSavingEnergy.collectAsState()
     val scope = rememberCoroutineScope()
+
+    val startMediaPlayer: ()->Unit = {
+        try {
+            if (!preventAutoResume) {
+                if (mediaPlayerPosition > 0) {
+                    Log.d("Game", "Resuming MediaPlayer from position: $mediaPlayerPosition")
+                    mediaPlayer.seekTo(mediaPlayerPosition)
+                }
+                mediaPlayer.start()
+                gameStarted = true
+                Log.d("Game", "MediaPlayer started")
+            }
+        } catch (e: Exception) {
+            Log.e("Game", "Error starting MediaPlayer: ${e.message}")
+        }
+    }
+
+    val pauseMediaPlayer = {
+        try {
+            preventAutoResume = true
+            if (mediaPlayer.isPlaying) {
+                wasMediaPlayerPlaying = true
+                mediaPlayerPosition = mediaPlayer.currentPosition
+                mediaPlayer.pause()
+                Log.d("Game", "MediaPlayer paused manually at position: $mediaPlayerPosition")
+            }
+            else{
+
+            }
+        } catch (e: Exception) {
+            Log.e("Game", "Error pausing MediaPlayer: ${e.message}")
+        }
+    }
+
+    val resumeMediaPlayer = {
+        try {
+            preventAutoResume = false
+            if (wasMediaPlayerPlaying) {
+                Log.d("Game", "Resuming MediaPlayer from position: $mediaPlayerPosition")
+                mediaPlayer.seekTo(mediaPlayerPosition)
+                mediaPlayer.start()
+                Log.d("Game", "MediaPlayer resumed")
+            }
+            else{
+
+            }
+        } catch (e: Exception) {
+            Log.e("Game", "Error resuming MediaPlayer: ${e.message}")
+        }
+    }
 
     // Lifecycle observer for handling pause/resume
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -368,24 +437,30 @@ fun Game(
         val observer = object : DefaultLifecycleObserver {
             override fun onPause(owner: LifecycleOwner) {
                 Log.d("Game", "Activity paused - pausing game")
-                isGamePaused = true
-                try {
-                    if (mediaPlayer.isPlaying) {
-                        mediaPlayer.pause()
+                if (gameStarted && !isGamePaused) {
+                    isGamePaused = true
+                    try {
+                        // Zapisz stan MediaPlayer
+                        if (mediaPlayer.isPlaying) {
+                            wasMediaPlayerPlaying = true
+                            pauseMediaPlayer()
+                            Log.d("Game", "MediaPlayer paused at position: $mediaPlayerPosition")
+                        } else {
+                            wasMediaPlayerPlaying = false
+                        }
+                        glViewRef.value?.onPause()
+                    } catch (e: Exception) {
+                        Log.e("Game", "Error pausing game: ${e.message}")
                     }
-                    glViewRef.value?.onPause()
-                } catch (e: Exception) {
-                    Log.e("Game", "Error pausing game: ${e.message}")
                 }
             }
 
             override fun onResume(owner: LifecycleOwner) {
                 Log.d("Game", "Activity resumed")
-                if (isGamePaused && isConnected && hasReceivedFirstMessage) {
-                    Log.d("Game", "Resuming game")
-                    isGamePaused = false
+                // Nie wznawiamy automatycznie gry - gracz musi ręcznie nacisnąć Resume
+                if (isGamePaused) {
+                    Log.d("Game", "Game is paused - waiting for manual resume")
                     glViewRef.value?.onResume()
-                    // Note: MediaPlayer resume will be handled by the game logic
                 }
             }
         }
@@ -406,9 +481,34 @@ fun Game(
             changeState()
             bluetoothManager.value.disconnect()
             try {
-                mediaPlayer.stop()
+                if (mediaPlayer.isPlaying) {
+                    mediaPlayer.stop()
+                }
             } catch (e: Exception) {
                 Log.e("Game", "Error stopping media player: ${e.message}")
+            }
+        }
+    }
+
+    DisposableEffect(mediaPlayer) {
+        val onCompletionListener = MediaPlayer.OnCompletionListener {
+            Log.d("Game", "MediaPlayer completed")
+        }
+
+        val onErrorListener = MediaPlayer.OnErrorListener { _, what, extra ->
+            Log.e("Game", "MediaPlayer error: what=$what, extra=$extra")
+            true
+        }
+
+        mediaPlayer.setOnCompletionListener(onCompletionListener)
+        mediaPlayer.setOnErrorListener(onErrorListener)
+
+        onDispose {
+            try {
+                mediaPlayer.setOnCompletionListener(null)
+                mediaPlayer.setOnErrorListener(null)
+            } catch (e: Exception) {
+                Log.e("Game", "Error clearing MediaPlayer listeners: ${e.message}")
             }
         }
     }
@@ -430,41 +530,39 @@ fun Game(
         }
     }
 
-    // Create GLSurfaceView early to enable Bluetooth communication
+
+
     LaunchedEffect(Unit) {
-        // Create GLView early for Bluetooth communication
         val glView = MyGLSurfaceView(
             context,
             noteTracks,
             bpm,
-            { mediaPlayer.start() },
+            startMediaPlayer,
             isSavingEnergy,
             { stats ->
                 onLevelEnd(stats)
                 bluetoothManager.value.disconnect()
             }
         )
+        glView.setZOrderOnTop(true)
+        glView.holder.setFormat(PixelFormat.TRANSLUCENT)
         glViewRef.value = glView
         rendererRef.value = glView.renderer
         Log.d("Game", "GLSurfaceView created early")
 
-        // Now connect to Bluetooth
         connectToDevice()
     }
 
-    // Start receiving loop when both connected and glView is ready
     LaunchedEffect(isConnected, glViewRef.value) {
         if (isConnected && glViewRef.value != null) {
             Log.d("BLE_LISTENING", "Starting receiving loop")
             try {
                 bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-                    // Mark that we've received the first message
                     if (!hasReceivedFirstMessage) {
                         hasReceivedFirstMessage = true
                         Log.d("BLE_LISTENING", "First message received")
                     }
 
-                    // Only process data if game is not paused
                     if (!isGamePaused) {
                         rendererRef.value?.columnEvent = data[2].toInt()
                         rendererRef.value?.hasEventOccured = data[2].toInt() != 9
@@ -485,21 +583,13 @@ fun Game(
         }
     }
 
-    // Handle back button to pause the game
     BackHandler(enabled = !isGamePaused && isConnected && hasReceivedFirstMessage) {
         Log.d("Game", "Back button pressed - pausing game")
         isGamePaused = true
-        try {
-            if (mediaPlayer.isPlaying) {
-                mediaPlayer.pause()
-            }
-            glViewRef.value?.onPause()
-        } catch (e: Exception) {
-            Log.e("Game", "Error pausing game: ${e.message}")
-        }
+        pauseMediaPlayer()
+        glViewRef.value?.onPause()
     }
 
-    // Show loading screen until both connected AND first message received
     if (!isConnected || !hasReceivedFirstMessage) {
         Column(
             modifier = modifier.fillMaxSize(),
@@ -510,6 +600,7 @@ fun Game(
                 isConnecting -> {
                     Text("Connecting to Bluetooth device...")
                     Loading()
+
                 }
                 !isConnected -> {
                     Text("Failed to connect to Bluetooth device")
@@ -524,6 +615,16 @@ fun Game(
                     ) {
                         Text("Retry Connection")
                     }
+                    Button(
+                        onClick = {
+                            bluetoothManager.value.disconnect()
+                            isConnected = true
+                            hasReceivedFirstMessage = true
+                        },
+                        enabled = !isConnecting
+                    ) {
+                        Text("Anyway...")
+                    }
                 }
                 isConnected && !hasReceivedFirstMessage -> {
                     Text("Connected! Waiting for drumstick data...")
@@ -534,7 +635,6 @@ fun Game(
         return
     }
 
-    // Show pause screen if game is paused
     if (isGamePaused) {
         Column(
             modifier = modifier.fillMaxSize(),
@@ -554,18 +654,39 @@ fun Game(
                     Log.d("Game", "Resume button pressed")
                     isGamePaused = false
                     glViewRef.value?.onResume()
-                    // MediaPlayer TODO
+                    resumeMediaPlayer()
                 }
             ) {
                 Text("Resume Game")
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
 
+            Button(
+                onClick = {
+                    Log.d("Game", "Exit button pressed")
+
+                        Log.d("Game", "Exit button pressed")
+                        try {
+                            if (mediaPlayer.isPlaying) {
+                                mediaPlayer.stop()
+                            }
+                        } catch (e: Exception) {
+                            Log.e("Game", "Error stopping MediaPlayer on exit: ${e.message}")
+                        }
+
+
+                        bluetoothManager.value.disconnect()
+                        onLevelEnd(LevelStatistics())
+
+                }
+            ) {
+                Text("Exit Game")
+            }
         }
         return
     }
 
-    // Only show the game when both connected AND first message received AND not paused
     if (glViewRef.value != null) {
         AndroidView(
             modifier = modifier.fillMaxSize(),
@@ -633,7 +754,7 @@ fun LevelEnd(
     ) {
         FacebookShareButton(stats.points)
         Text("Level ended\nPoints:${stats.points}")
-
+        //no points for unfinished level
         Text("Level Statistics")
         Text("Points: ${stats.points}")
         Text("Max Combo: ${stats.maxCombo}")

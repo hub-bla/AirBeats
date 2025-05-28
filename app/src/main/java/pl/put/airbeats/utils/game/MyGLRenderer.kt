@@ -86,8 +86,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     // Other variables
     val hitTileColor = floatArrayOf(0.118f, 0.863f, 0.133f, 1.0f)
     val missedTileColor = floatArrayOf(0.818f, 0.163f, 0.133f, 1.0f)
-    val leftStickColor = floatArrayOf(0.133f, 0.818f, 0.133f, 1.0f)
-    val rightStickColor = floatArrayOf(0.818f, 0.818f, 0.133f, 1.0f)
+    val leftStickColor = floatArrayOf(0.133f, 0.818f, 0.133f, .7f)
+    val rightStickColor = floatArrayOf(0.818f, 0.818f, 0.133f, .7f)
 
     constructor(
         noteTracks: Map<String, NoteTrack>,
@@ -101,6 +101,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         this.playAudio = playAudio
         this.onLevelEnd = onLevelEnd
         this.isSavingEnergy = isSavingEnergy
+
     }
 
     private var gamePaused = false
@@ -230,7 +231,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         Matrix.translateM(position, 0, 0f, LINE_HEIGHT, -0.1f)
 
         line = Tile(
-            shaderProgram, 2.5f, 0.05f, position, vpMatrix, floatArrayOf(0.818f, 0.163f, 0.133f, 1f)
+            shaderProgram, 2.5f, 0.05f, position, vpMatrix, floatArrayOf(0.818f, 0.163f, 0.133f, .5f)
         )
 
 
@@ -243,6 +244,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
                 shaderProgram, 0.1f, 0.045f, position, vpMatrix, leftStickColor, 8
             )
         } else {
+            GLES20.glEnable(GLES20.GL_BLEND)
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
             leftStick = Dot(
                 shaderProgram, 0.1f, 0.045f, position, vpMatrix, leftStickColor
             )

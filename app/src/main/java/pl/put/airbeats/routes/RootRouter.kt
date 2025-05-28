@@ -53,7 +53,7 @@ fun RootRouter(airBeatsViewModel: AirBeatsViewModel) {
             )) { backStackEntry ->
             val songName: String = backStackEntry.arguments?.getString("songName") ?: ""
             val difficulty: String = backStackEntry.arguments?.getString("difficulty") ?: ""
-            GameScreen(songName, difficulty, airBeatsViewModel)
+            GameScreen(songName, difficulty, airBeatsViewModel, navController =  navController)
         }
 
         composable(route = Screen.Settings.route + "/reminders") {
