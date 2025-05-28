@@ -16,6 +16,7 @@ import pl.put.airbeats.LocalUser
 import pl.put.airbeats.routes.Screen
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import pl.put.airbeats.utils.LottieLoading
 
 @Composable
 fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
@@ -54,6 +55,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             ) {
                 Text("Settings")
             }
+            LottieLoading(size = 0.dp)
         }
 
     }

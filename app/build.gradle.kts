@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.google.play.services.auth)
     implementation(libs.facebook.sdk)
+    implementation("com.airbnb.android:lottie-compose:6.6.6")
     testImplementation(libs.junit)
     implementation("com.facebook.android:facebook-share:16.3.0")
     androidTestImplementation(libs.androidx.junit)

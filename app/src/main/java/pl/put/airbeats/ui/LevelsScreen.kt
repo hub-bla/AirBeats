@@ -24,6 +24,7 @@ import com.google.firebase.firestore.firestore
 import pl.put.airbeats.routes.Screen
 import pl.put.airbeats.ui.components.ErrorComponent
 import pl.put.airbeats.ui.components.Loading
+import pl.put.airbeats.utils.LottieLoading
 
 @Composable
 fun LevelsScreen(navController: NavController, modifier: Modifier = Modifier) {
@@ -138,7 +139,7 @@ fun SongsInDifficulty(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isLoading.value) {
-            Loading()
+            LottieLoading(modifier = Modifier.fillMaxSize(), message = "Loading songs...")
             return
         }
 

@@ -47,21 +47,16 @@ import java.time.format.DateTimeFormatter
 import androidx.core.net.toUri
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.graphics.PixelFormat
-import android.net.Uri
 import android.view.WindowManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -69,12 +64,9 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
-import com.facebook.share.Sharer
 import com.facebook.share.model.ShareLinkContent
 import com.facebook.share.widget.ShareDialog
+import pl.put.airbeats.utils.LottieLoading
 
 @Composable
 @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
@@ -330,7 +322,7 @@ fun Menu(
         Text(songName)
 
         if (isLoading) {
-            Loading()
+            LottieLoading(message = "Gathering data...")
             return
         }
 
@@ -431,7 +423,6 @@ fun Game(
         }
     }
 
-    // Lifecycle observer for handling pause/resume
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = object : DefaultLifecycleObserver {
@@ -440,7 +431,6 @@ fun Game(
                 if (gameStarted && !isGamePaused) {
                     isGamePaused = true
                     try {
-                        // Zapisz stan MediaPlayer
                         if (mediaPlayer.isPlaying) {
                             wasMediaPlayerPlaying = true
                             pauseMediaPlayer()
@@ -457,7 +447,6 @@ fun Game(
 
             override fun onResume(owner: LifecycleOwner) {
                 Log.d("Game", "Activity resumed")
-                // Nie wznawiamy automatycznie gry - gracz musi ręcznie nacisnąć Resume
                 if (isGamePaused) {
                     Log.d("Game", "Game is paused - waiting for manual resume")
                     glViewRef.value?.onResume()
@@ -598,11 +587,12 @@ fun Game(
         ) {
             when {
                 isConnecting -> {
-                    Text("Connecting to Bluetooth device...")
-                    Loading()
+                    LottieLoading(
+                        message = "Connecting to Bluetooth device...",
+                        modifier = Modifier.fillMaxSize())
 
                 }
-                !isConnected -> {
+                !isConnected && !isConnecting -> {
                     Text("Failed to connect to Bluetooth device")
                     Button(
                         onClick = {
@@ -627,8 +617,7 @@ fun Game(
                     }
                 }
                 isConnected && !hasReceivedFirstMessage -> {
-                    Text("Connected! Waiting for drumstick data...")
-                    Loading()
+                    LottieLoading(message = "Calibrating sensors...", modifier = Modifier.fillMaxSize())
                 }
             }
         }
