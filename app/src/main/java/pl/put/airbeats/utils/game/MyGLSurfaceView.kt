@@ -4,12 +4,11 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
 import android.util.Log
+import android.view.View
 import pl.put.airbeats.utils.midi.NoteTrack
 
 class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
     lateinit var renderer: MyGLRenderer
-
-
 
 //    constructor(
 //        context: Context,
@@ -35,12 +34,21 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         context: Context,
         noteTrack: Map<String, NoteTrack> = emptyMap<String, NoteTrack>(),
         bpm: Int = 0,
+        playAudio: () -> Unit,
+        isSavingEnergy: Boolean,
         onLevelEnd: (LevelStatistics) -> Unit,
     ) : this(context) {
         // Create an OpenGL ES 2.0 context
         setEGLContextClientVersion(2)
 
-        renderer = MyGLRenderer(noteTrack, bpm, onLevelEnd)
+        renderer = MyGLRenderer(noteTrack, bpm, playAudio, onLevelEnd, isSavingEnergy)
+
+        if(isSavingEnergy) {
+            Log.d("EnergySaving", "true")
+            super.setEGLConfigChooser(5, 6, 5, 0, 16, 0)
+        } else {
+            Log.d("EnergySaving", "false")
+        }
 
         setRenderer(renderer)
     }

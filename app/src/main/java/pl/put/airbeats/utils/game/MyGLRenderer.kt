@@ -1,14 +1,15 @@
 package pl.put.airbeats.utils.game
 
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
-
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.SystemClock
 import android.util.Log
 import pl.put.airbeats.utils.midi.NoteTrack
+import java.util.Timer
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
+import kotlin.concurrent.schedule
 import kotlin.math.abs
 
 // Game related constants
@@ -19,7 +20,8 @@ const val TILE_SPEED = 2f / TILE_ON_SCREEN_TIME
 const val START_DELAY = 2000f // in milliseconds
 
 // Scoring related constants
-const val ERROR_MARGIN = 1.1f // relative to tile center (gives additional invisible error margin if >1f )
+const val ERROR_MARGIN =
+    1.1f // relative to tile center (gives additional invisible error margin if >1f )
 
 //const val PERFECT_MARGIN = 0.1f // relative to tile center
 //const val GREAT_MARGIN = 0.5f // relative to tile center
@@ -39,8 +41,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     private var tiles = mutableListOf<MutableList<Tile>>()
 
     private lateinit var line: Tile
-    private lateinit var leftStick: Tile
-    private lateinit var rightStick: Tile
+    private lateinit var leftStick: Dot
+    private lateinit var rightStick: Dot
 
     private var lastTime: Long = 0
 
@@ -49,12 +51,15 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     // Level variables
     private var noteTracks: Map<String, NoteTrack>
-//    private var bpm: Int
+
+    //    private var bpm: Int
+    private val playAudio: () -> Unit
     private val onLevelEnd: (LevelStatistics) -> Unit
-    // TODO audio link
+    private var isSavingEnergy = false
 
     // Level statistics variables
     private var stats = LevelStatistics()
+    private var initialized = false
 
 //    private var points = 0f
 //    private var maxCombo = 0
@@ -68,26 +73,64 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     // Event variables
     @Volatile
     var hasEventOccured = false
+
     @Volatile
     var columnEvent = 0
+
     @Volatile
     var leftStickPos = -0.5f // normalized to range from -1 (left) to 1 (right)
+
     @Volatile
     var rightStickPos = 0.5f // normalized to range from -1 (left) to 1 (right)
 
     // Other variables
     val hitTileColor = floatArrayOf(0.118f, 0.863f, 0.133f, 1.0f)
     val missedTileColor = floatArrayOf(0.818f, 0.163f, 0.133f, 1.0f)
-    val leftStickColor = floatArrayOf(0.133f, 0.818f, 0.133f, 1.0f)
-    val rightStickColor = floatArrayOf(0.818f, 0.818f, 0.133f, 1.0f)
+    val leftStickColor = floatArrayOf(0.133f, 0.818f, 0.133f, .7f)
+    val rightStickColor = floatArrayOf(0.818f, 0.818f, 0.133f, .7f)
 
-    constructor(noteTracks: Map<String, NoteTrack>, bpm: Int, onLevelEnd: (LevelStatistics) -> Unit,) {
+    constructor(
+        noteTracks: Map<String, NoteTrack>,
+        bpm: Int,
+        playAudio: () -> Unit,
+        onLevelEnd: (LevelStatistics) -> Unit,
+        isSavingEnergy: Boolean,
+    ) {
         this.noteTracks = noteTracks
 //        this.bpm = bpm
+        this.playAudio = playAudio
         this.onLevelEnd = onLevelEnd
+        this.isSavingEnergy = isSavingEnergy
+
+    }
+
+    private var gamePaused = false
+    private var pauseTime = 0L
+
+    fun pauseGame() {
+        gamePaused = true
+        pauseTime = System.currentTimeMillis()
+    }
+
+    fun resumeGame() {
+        if (gamePaused) {
+            val pauseDuration = System.currentTimeMillis() - pauseTime
+
+            // Adjust lastTime to account for the pause duration
+            // This prevents a large time jump in the next frame
+            lastTime += pauseDuration
+
+            // Reset pause state
+            gamePaused = false
+            pauseTime = 0L
+
+            Log.d("Game", "Game resumed after ${pauseDuration}ms pause")
+        }
     }
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
+
+
         // Creates shader program
         this.shaderProgram = ShaderProgram()
 
@@ -99,7 +142,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         // Set colors of tiles in columns
         val tileColors = mutableListOf<FloatArray>()
-        for(i in 0..<numberOfColumns step 2) {
+        for (i in 0..<numberOfColumns step 2) {
             tileColors.add(floatArrayOf(0.118f, 0.663f, 0.933f, 1.0f))
             tileColors.add(floatArrayOf(0.018f, 0.563f, 0.833f, 1.0f))
         }
@@ -117,19 +160,20 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Calculate starting positions for all columns
         val startPositions = mutableListOf<FloatArray>()
         for (i in 0..<numberOfColumns) {
-            val startPosition = floatArrayOf(startPositionXOffset + i*tileWidth, startPositionYOffset, 0f)
+            val startPosition =
+                floatArrayOf(startPositionXOffset + i * tileWidth, startPositionYOffset, 0f)
             startPositions.add(startPosition)
         }
 
         // Set the camera position (View matrix)
-        Matrix.setLookAtM(viewMatrix, 0,
-            0f, 0f, 3f, // Camera position
+        Matrix.setLookAtM(
+            viewMatrix, 0, 0f, 0f, 3f, // Camera position
             0f, 0f, 0f, // Camera looks at
             0f, 1.0f, 0.0f // Camera up
         )
 
-        Matrix.frustumM(projectionMatrix, 0,
-            -1f, 1f,    // left right
+        Matrix.frustumM(
+            projectionMatrix, 0, -1f, 1f,    // left right
             -1f, 1f,    // bottom top
             3f, 7f      // near far
         )
@@ -140,88 +184,103 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Create and setup all Tile objects on level
         val position = FloatArray(16)
         var currentColumn = 0
-        for((_, noteTrack) in noteTracks){
-            if(currentColumn >= numberOfColumns){
-                break
+        if (!initialized) {
+            initialized = true
+            for ((_, noteTrack) in noteTracks) {
+                if (currentColumn >= numberOfColumns) {
+                    break
+                }
+                val startPosition = startPositions[currentColumn]
+                val (x, y, z) = startPosition
+                val color = tileColors[currentColumn]
+                val tilesInColumn = mutableListOf<Tile>()
+                for (noteDurationTimestamp in noteTrack.noteOnsTimesInMs) {
+                    // Calculate duration of note
+                    val (noteStartTime, noteEndTime) = noteDurationTimestamp
+                    val noteDuration = noteEndTime - noteStartTime
+
+                    // Calculate height of tile based on duration of note
+                    val noteHeight = (noteDuration.toFloat() * TILE_SPEED) * 0.95f
+                    val startPositionYOffset = noteHeight / 2f
+//                val startPositionYOffset =  0
+
+                    // Calculate y coordinate of tile based on note timestamp
+                    val distance = noteStartTime.toFloat() * TILE_SPEED
+                    val yDistance = y + distance + startPositionYOffset
+
+                    // Calculate tile position
+                    Matrix.setIdentityM(position, 0)
+                    Matrix.translateM(position, 0, x, yDistance, z)
+
+                    // Create Tile Object
+                    val tile = Tile(shaderProgram, tileWidth, noteHeight, position, vpMatrix, color)
+                    tilesInColumn.add(tile)
+                    stats.addTile()
+                }
+                tiles.add(tilesInColumn)
+                currentColumn++
             }
-            val startPosition = startPositions[currentColumn]
-            val (x, y, z) = startPosition
-            val color = tileColors[currentColumn]
-            val tilesInColumn = mutableListOf<Tile>()
-            for (noteDurationTimestamp in noteTrack.noteOnsTimesInMs){
-                // Calculate duration of note
-                val (noteStartTime, noteEndTime) = noteDurationTimestamp
-                val noteDuration = noteEndTime - noteStartTime
-
-                // Calculate height of tile based on duration of note
-                val noteHeight = (noteDuration.toFloat() * TILE_SPEED) * 0.95f
-                val startPositionYOffset =  noteHeight/2f
-
-                // Calculate y coordinate of tile based on note timestamp
-                val distance = noteStartTime.toFloat() * TILE_SPEED
-                val yDistance = y + distance + startPositionYOffset
-
-                // Calculate tile position
-                Matrix.setIdentityM(position, 0)
-                Matrix.translateM(position, 0, x, yDistance, z)
-
-                // Create Tile Object
-                val tile = Tile(shaderProgram, tileWidth, noteHeight, position, vpMatrix, color)
-                tilesInColumn.add(tile)
-                stats.addTile()
+            for (i in tiles.size..<numberOfColumns) {
+                val tilesInColumn = mutableListOf<Tile>()
+                tiles.add(tilesInColumn)
             }
-            tiles.add(tilesInColumn)
-            currentColumn++
-        }
-        for(i in tiles.size..<numberOfColumns){
-            val tilesInColumn = mutableListOf<Tile>()
-            tiles.add(tilesInColumn)
-        }
 
-
+        }
         // Calculate line position
         Matrix.setIdentityM(position, 0)
         Matrix.translateM(position, 0, 0f, LINE_HEIGHT, -0.1f)
 
         line = Tile(
-            shaderProgram,
-            2.5f,
-            0.05f,
-            position,
-            vpMatrix,
-            floatArrayOf(0.818f, 0.163f, 0.133f, 1f))
+            shaderProgram, 2.5f, 0.05f, position, vpMatrix, floatArrayOf(0.818f, 0.163f, 0.133f, .5f)
+        )
 
 
         // Calculate left stick position
         Matrix.setIdentityM(position, 0)
         Matrix.translateM(position, 0, leftStickPos, STICK_HEIGHT, -0.1f)
 
-        leftStick = Tile(
-            shaderProgram,
-            0.1f,
-            0.045f,
-            position,
-            vpMatrix,
-            leftStickColor)
+        if(isSavingEnergy){
+            leftStick = Dot(
+                shaderProgram, 0.1f, 0.045f, position, vpMatrix, leftStickColor, 8
+            )
+        } else {
+            GLES20.glEnable(GLES20.GL_BLEND)
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+            leftStick = Dot(
+                shaderProgram, 0.1f, 0.045f, position, vpMatrix, leftStickColor
+            )
+        }
 
 
         // Calculate right stick position
         Matrix.setIdentityM(position, 0)
         Matrix.translateM(position, 0, rightStickPos, STICK_HEIGHT, -0.1f)
 
-        rightStick = Tile(
-            shaderProgram,
-            0.1f,
-            0.045f,
-            position,
-            vpMatrix,
-            rightStickColor)
+        if(isSavingEnergy){
+            rightStick = Dot(
+                shaderProgram, 0.1f, 0.045f, position, vpMatrix, rightStickColor, 8
+            )
+        } else {
+            rightStick = Dot(
+                shaderProgram, 0.1f, 0.045f, position, vpMatrix, rightStickColor
+            )
+        }
+
+        val audioDelay = (START_DELAY + TILE_ON_SCREEN_TIME * ((2 + LINE_HEIGHT) / 2)).toLong()
+        Log.d("audioDelay", "$audioDelay")
 
         lastTime = SystemClock.uptimeMillis()
+        Timer("SettingUp", false).schedule(audioDelay) {
+            playAudio()
+        }
     }
 
     override fun onDrawFrame(unused: GL10) {
         // Redraw background color
+        if (gamePaused) {
+            // Don't update game logic when paused, but still render the last frame
+            return
+        }
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
         val currentTime = SystemClock.uptimeMillis()
@@ -230,12 +289,12 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         val distance = -TILE_SPEED * time.toInt()
 
-        if(hasEventOccured) {
+        if (hasEventOccured) {
             Log.d("Game event", "Event at column $columnEvent")
             hasEventOccured = false
-            if(tiles[columnEvent].isNotEmpty()) {
+            if (tiles[columnEvent].isNotEmpty()) {
                 var relativeOffset = 2f
-                tiles[columnEvent].firstOrNull{ tile ->
+                tiles[columnEvent].firstOrNull { tile ->
                     val (_, y, _, _) = tile.getPosition()
                     relativeOffset = (abs(LINE_HEIGHT - y)) / (tile.tileHeight / 2f)
                     (relativeOffset < ERROR_MARGIN)
@@ -256,7 +315,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 //            }?.changeColor(missedTileColor)
 //        }
 
-        for(tile in tiles.flatten()){
+        for (tile in tiles.flatten()) {
             tile.move(0f, distance, 0f)
             tile.draw()
         }
@@ -270,7 +329,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
             }
         }
 
-        if( tiles.flatten().isEmpty() ) {
+        if (tiles.flatten().isEmpty()) {
             onLevelEnd(stats)
         }
     }

@@ -50,8 +50,7 @@ class ShaderProgram {
             GLES20.glLinkProgram(it)
         }
     }
-
-    fun render(vertexBuffer: FloatBuffer, vertexCount: Int, mvpMatrix: FloatArray, color: FloatArray) {
+    fun renderTriangleFan(vertexBuffer: FloatBuffer, vertexCount: Int, mvpMatrix: FloatArray, color: FloatArray) {
         // Add program to OpenGL ES environment
         GLES20.glUseProgram(program)
 
@@ -83,12 +82,54 @@ class ShaderProgram {
                 GLES20.glUniform4fv(colorHandle, 1, color, 0)
             }
 
-            // Draw the shape
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, vertexCount)
+            // Draw as triangle fan - pierwszy vertex to centrum, reszta to obwód
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, vertexCount)
 
-            // Disable vertex array
+            // Disable vertex attribute array
             GLES20.glDisableVertexAttribArray(it)
+        }}
+        fun render(
+            vertexBuffer: FloatBuffer,
+            vertexCount: Int,
+            mvpMatrix: FloatArray,
+            color: FloatArray
+        ) {
+            // Add program to OpenGL ES environment
+            GLES20.glUseProgram(program)
+
+            // Get handle to vertex shader's vPosition member
+            GLES20.glGetAttribLocation(program, "vPosition").also {
+
+                // Enable a handle to the vertices
+                GLES20.glEnableVertexAttribArray(it)
+
+                // Prepare the coordinate data
+                GLES20.glVertexAttribPointer(
+                    it,
+                    CORDS_PER_VERTEX,
+                    GLES20.GL_FLOAT,
+                    false,
+                    VERTEX_STRIDE,
+                    vertexBuffer
+                )
+
+                // Get handle to shape's transformation matrix
+                GLES20.glGetUniformLocation(program, "uMVPMatrix").also { matrixHandle ->
+                    // Pass the transformation matrix to the shader
+                    GLES20.glUniformMatrix4fv(matrixHandle, 1, false, mvpMatrix, 0)
+                }
+
+                // Get handle to fragment shader's vColor member
+                GLES20.glGetUniformLocation(program, "vColor").also { colorHandle ->
+                    // Pass the color to the shader
+                    GLES20.glUniform4fv(colorHandle, 1, color, 0)
+                }
+
+                // Draw the shape
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, vertexCount)
+
+                // Disable vertex array
+                GLES20.glDisableVertexAttribArray(it)
+            }
         }
     }
-
-}

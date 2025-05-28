@@ -4,10 +4,12 @@ import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.Button
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,12 +24,14 @@ import pl.put.airbeats.routes.Screen
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import pl.put.airbeats.ui.components.SuccessComponent
+import pl.put.airbeats.utils.room.AirBeatsViewModel
 
 @Composable
-fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) {
+fun SettingsScreen(navController: NavController, airBeatsViewModel: AirBeatsViewModel, modifier: Modifier = Modifier) {
     val backStackEntry = navController.currentBackStackEntry
     val savedStateHandle = backStackEntry?.savedStateHandle
     var successMessage by remember { mutableStateOf("") }
+    val isSavingEnergy by airBeatsViewModel.isSavingEnergy.collectAsState()
 
     LaunchedEffect(savedStateHandle) {
         savedStateHandle?.get<String>("successMessage")?.let {
@@ -75,6 +79,14 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
 
             Button(onClick = ::logoutUser) {
                 Text("Log out")
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(
+                    checked = isSavingEnergy,
+                    onCheckedChange = { airBeatsViewModel.changeSavingMode(it) }
+                )
+                Text("saving energy mode")
             }
         }
     }
