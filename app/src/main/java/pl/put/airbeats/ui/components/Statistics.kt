@@ -42,7 +42,6 @@ fun Statistics(
 
     ElevatedCard(
         modifier = modifier
-            .width(350.dp)
             .clickable(onClick = {isExpanded = !isExpanded})
     ) {
         Column (
