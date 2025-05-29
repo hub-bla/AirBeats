@@ -58,6 +58,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             ) {
                 Text("Settings")
             }
+            //diabeł
             LottieLoading(size = 0.dp)
         }
 

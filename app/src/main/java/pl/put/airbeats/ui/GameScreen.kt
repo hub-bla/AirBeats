@@ -50,6 +50,8 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.PixelFormat
 import android.view.WindowManager
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +59,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +72,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.facebook.share.model.ShareLinkContent
 import com.facebook.share.widget.ShareDialog
+import pl.put.airbeats.ui.components.Statistics
 import pl.put.airbeats.utils.LottieLoading
 
 @Composable
@@ -103,53 +110,59 @@ fun GameScreen(
         showCalibrationModal = false
     }
 
-    if (showCalibrationModal) {
-        CalibrationModal(
-            onAccept = onCalibrationAccepted,
-            onCancel = onCalibrationCancelled
-        )
-    }
-    BackHandler(
-        enabled = gameState == 0 || gameState == 2
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        val previousEntry = navController.previousBackStackEntry
-        Log.d("BackHandler", "Previous entry: $previousEntry")
-        Log.d("BackHandler", "Setting difficulty: $difficulty")
+        if (showCalibrationModal) {
+            CalibrationModal(
+                onAccept = onCalibrationAccepted,
+                onCancel = onCalibrationCancelled
+            )
+        }
 
-        previousEntry?.savedStateHandle?.set("difficulty", difficulty)
-        navController.popBackStack()
-    }
+        BackHandler(
+            enabled = gameState == 0 || gameState == 2
+        ) {
+            val previousEntry = navController.previousBackStackEntry
+            Log.d("BackHandler", "Previous entry: $previousEntry")
+            Log.d("BackHandler", "Setting difficulty: $difficulty")
 
+            previousEntry?.savedStateHandle?.set("difficulty", difficulty)
+            navController.popBackStack()
+        }
 
-    when (gameState) {
-        0 -> Menu(
-            {newNoteTracks ->  noteTracks.value = newNoteTracks},
-            {newBpm ->  bpm.intValue = newBpm},
-            {newMediaPlayer ->  mediaPlayer.value = newMediaPlayer},
-            songName,
-            difficulty,
-            startCalibration,
-            modifier,
-        )
+        when (gameState) {
+            0 -> Menu(
+                {newNoteTracks ->  noteTracks.value = newNoteTracks},
+                {newBpm ->  bpm.intValue = newBpm},
+                {newMediaPlayer ->  mediaPlayer.value = newMediaPlayer},
+                songName,
+                difficulty,
+                startCalibration,
+                Modifier.fillMaxSize(),
+            )
 
-        1 -> Game(
-            airBeatsViewModel,
-            mediaPlayer.value,
-            noteTracks.value,
-            bpm.intValue,
-            onLevelEnd,
-            {gameState = 2},
-            modifier,
-        )
+            1 -> Game(
+                airBeatsViewModel,
+                mediaPlayer.value,
+                noteTracks.value,
+                bpm.intValue,
+                onLevelEnd,
+                {gameState = 2},
+                Modifier.fillMaxSize(),
+            )
 
-        2 -> LevelEnd(
-            songName,
-            difficulty,
-            levelStatistics!!,
-            {gameState = 0},
-            airBeatsViewModel,
-            modifier,
-        )
+            2 -> LevelEnd(
+                songName,
+                difficulty,
+                levelStatistics!!,
+                {gameState = 0},
+                airBeatsViewModel,
+                Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 
@@ -168,9 +181,12 @@ fun CalibrationModal(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(8.dp),
             shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(
                 modifier = Modifier
@@ -180,22 +196,25 @@ fun CalibrationModal(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Kalibracja pałek",
+                    text = "Stick Calibration",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
-                    text = "Przed rozpoczęciem gry należy skalibrować pałki drumstick'ów.",
+                    text = "You need to calibrate the sensors before starting the game.",
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
-                    text = "Instrukcje:",
+                    text = "Instructions:",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Column(
@@ -203,16 +222,19 @@ fun CalibrationModal(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "• Ustaw pałki w pozycji spoczynkowej",
-                        style = MaterialTheme.typography.bodySmall
+                        text = "• Place the sticks in a resting position",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "• Upewnij się, że pałki są stabilne",
-                        style = MaterialTheme.typography.bodySmall
+                        text = "• Make sure they are stable",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "• Nie ruszaj pałkami podczas kalibracji",
-                        style = MaterialTheme.typography.bodySmall
+                        text = "• Do not move the sticks during calibration",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -224,20 +246,21 @@ fun CalibrationModal(
                         onClick = onCancel,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Anuluj")
+                        Text("Cancel")
                     }
 
                     Button(
                         onClick = onAccept,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Rozpocznij kalibrację")
+                        Text("Calibrate")
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun Menu(
@@ -315,23 +338,60 @@ fun Menu(
     }
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(songName)
 
         if (isLoading) {
-            LottieLoading(message = "Gathering data...")
+            LottieLoading(message = "Gathering data: ${songName}...")
             return
         }
+        else{
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    Text(
+                        text = songName,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
 
-        if (error.isNotEmpty()) {
-            ErrorComponent(error)
-        }
+                    if (error.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        ErrorComponent(error)
+                    }
 
-        Button(onClick = startGame, enabled = error.isEmpty()) {
-            Text("play")
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = startGame,
+                        enabled = error.isEmpty(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "PLAY",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -361,7 +421,7 @@ fun Game(
     val glViewRef = remember { mutableStateOf<MyGLSurfaceView?>(null) }
     val rendererRef = remember { mutableStateOf<MyGLRenderer?>(null) }
     var isConnected by remember { mutableStateOf(false) }
-    var isConnecting by remember { mutableStateOf(false) }
+    var isConnecting by remember { mutableStateOf(true) }
     var hasReceivedFirstMessage by remember { mutableStateOf(false) }
     var isGamePaused by remember { mutableStateOf(false) }
     var gameStarted by remember { mutableStateOf(false) }
@@ -593,27 +653,72 @@ fun Game(
 
                 }
                 !isConnected && !isConnecting -> {
-                    Text("Failed to connect to Bluetooth device")
-                    Button(
-                        onClick = {
-                            bluetoothManager.value.disconnect()
-                            scope.launch {
-                                connectToDevice()
+
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                        ) {
+                            Text(
+                                text = "Failed to connect to Bluetooth device",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    bluetoothManager.value.disconnect()
+                                    scope.launch {
+                                        connectToDevice()
+                                    }
+                                },
+                                enabled = !isConnecting,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Retry Connection",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
                             }
-                        },
-                        enabled = !isConnecting
-                    ) {
-                        Text("Retry Connection")
-                    }
-                    Button(
-                        onClick = {
-                            bluetoothManager.value.disconnect()
-                            isConnected = true
-                            hasReceivedFirstMessage = true
-                        },
-                        enabled = !isConnecting
-                    ) {
-                        Text("Anyway...")
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedButton(
+                                onClick = {
+                                    bluetoothManager.value.disconnect()
+                                    isConnected = true
+                                    hasReceivedFirstMessage = true
+                                },
+                                enabled = !isConnecting,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Text(
+                                    text = "Anyway...",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                        }
                     }
                 }
                 isConnected && !hasReceivedFirstMessage -> {
@@ -625,52 +730,114 @@ fun Game(
     }
 
     if (isGamePaused) {
+
         Column(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.9f)),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Game Paused",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    Log.d("Game", "Resume button pressed")
-                    isGamePaused = false
-                    glViewRef.value?.onResume()
-                    resumeMediaPlayer()
-                }
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 8.dp
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
             ) {
-                Text("Resume Game")
-            }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp)
+                ) {
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    Log.d("Game", "Exit button pressed")
+                    Text(
+                        text = "Game Paused",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
 
-                        Log.d("Game", "Exit button pressed")
-                        try {
-                            if (mediaPlayer.isPlaying) {
-                                mediaPlayer.stop()
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = {
+                            Log.d("Game", "Resume button pressed")
+                            isGamePaused = false
+                            glViewRef.value?.onResume()
+                            resumeMediaPlayer()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Resume Game",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            Log.d("Game", "Exit button pressed")
+                            try {
+                                if (mediaPlayer.isPlaying) {
+                                    mediaPlayer.stop()
+                                }
+                            } catch (e: Exception) {
+                                Log.e("Game", "Error stopping MediaPlayer on exit: ${e.message}")
                             }
-                        } catch (e: Exception) {
-                            Log.e("Game", "Error stopping MediaPlayer on exit: ${e.message}")
-                        }
-
-
-                        bluetoothManager.value.disconnect()
-                        onLevelEnd(LevelStatistics())
-
+                            bluetoothManager.value.disconnect()
+                            onLevelEnd(LevelStatistics())
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = BorderStroke(
+                            2.dp,
+                            MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Exit Game",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
-            ) {
-                Text("Exit Game")
             }
         }
         return
@@ -735,50 +902,124 @@ fun LevelEnd(
     }
 
     val levelStatistics by levelStatisticviewModel.selectUser(userID).collectAsState(emptyList())
+    val collectedStats = LevelStatisticEntity(
+        userID = userID,
+        songName = songName,
+        difficulty = difficulty,
+        date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+        points = stats.points,
+        good = stats.good,
+        great = stats.great,
+        perfect = stats.perfect,
+        missed = stats.missed,
+        maxCombo = stats.maxCombo
+    )
+    val levelFinished = stats.missed + stats.points > 0
 
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        FacebookShareButton(stats.points)
-        Text("Level ended\nPoints:${stats.points}")
-        //no points for unfinished level
-        Text("Level Statistics")
-        Text("Points: ${stats.points}")
-        Text("Max Combo: ${stats.maxCombo}")
-        Text("Perfect: ${stats.perfect}")
-        Text("Great: ${stats.great}")
-        Text("Good: ${stats.good}")
-        Text("Missed: ${stats.missed}")
-
-        Button(
-            onClick = onSave,
-            enabled = !isSaving
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (levelFinished) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.errorContainer
+                }
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
         ) {
-            if (isSaving) {
-                Text("Saving...")
-            } else {
-                Text("save statistics")
-            }
-        }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                if (levelFinished) {
+                    Text(
+                        text = "Level Completed!",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
+                    )
 
-        if (message.isNotEmpty()) {
-            Text(message)
-        }
+                    Spacer(modifier = Modifier.height(8.dp))
 
-        Button(onClick = startGame) {
-            Text("play again")
-        }
+                    Text(
+                        text = "Points: ${stats.points}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
+                    )
 
-        Text("All Player Statistics")
+                    Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn {
-            items(levelStatistics) { levelStatistic ->
-                Row {
-                    Text("Date: ${levelStatistic.date} points: ${levelStatistic.points} missed: ${levelStatistic.missed}")
+                    Statistics(collectedStats)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FacebookShareButton(stats.points)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = onSave,
+                        enabled = !isSaving,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (isSaving) "Saving..." else "Save Statistics",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
+                    if (message.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Level Not Finished",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Shame Points: ${stats.points}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = startGame,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+        ) {
+            Text(
+                text = "Play Again",
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }
@@ -794,7 +1035,7 @@ fun FacebookShareButton(
 
     val quote = "Got $points points in AirBeats!"
 
-    // Reużywamy dialogu
+
     val shareDialog = remember {
         activity?.let { ShareDialog(it) }
     }

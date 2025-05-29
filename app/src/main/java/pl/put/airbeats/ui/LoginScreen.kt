@@ -207,7 +207,7 @@ fun LoginScreen(
         }
 
         if (isLoading) {
-            LottieLoading(message = "Checking your credentials...", modifier = Modifier.fillMaxSize())
+            LottieLoading(modifier = Modifier.fillMaxSize())
             return
         }
 
