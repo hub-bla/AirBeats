@@ -50,6 +50,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.PixelFormat
 import android.view.WindowManager
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.ui.platform.LocalContext
@@ -103,53 +104,59 @@ fun GameScreen(
         showCalibrationModal = false
     }
 
-    if (showCalibrationModal) {
-        CalibrationModal(
-            onAccept = onCalibrationAccepted,
-            onCancel = onCalibrationCancelled
-        )
-    }
-    BackHandler(
-        enabled = gameState == 0 || gameState == 2
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        val previousEntry = navController.previousBackStackEntry
-        Log.d("BackHandler", "Previous entry: $previousEntry")
-        Log.d("BackHandler", "Setting difficulty: $difficulty")
+        if (showCalibrationModal) {
+            CalibrationModal(
+                onAccept = onCalibrationAccepted,
+                onCancel = onCalibrationCancelled
+            )
+        }
 
-        previousEntry?.savedStateHandle?.set("difficulty", difficulty)
-        navController.popBackStack()
-    }
+        BackHandler(
+            enabled = gameState == 0 || gameState == 2
+        ) {
+            val previousEntry = navController.previousBackStackEntry
+            Log.d("BackHandler", "Previous entry: $previousEntry")
+            Log.d("BackHandler", "Setting difficulty: $difficulty")
 
+            previousEntry?.savedStateHandle?.set("difficulty", difficulty)
+            navController.popBackStack()
+        }
 
-    when (gameState) {
-        0 -> Menu(
-            {newNoteTracks ->  noteTracks.value = newNoteTracks},
-            {newBpm ->  bpm.intValue = newBpm},
-            {newMediaPlayer ->  mediaPlayer.value = newMediaPlayer},
-            songName,
-            difficulty,
-            startCalibration,
-            modifier,
-        )
+        when (gameState) {
+            0 -> Menu(
+                {newNoteTracks ->  noteTracks.value = newNoteTracks},
+                {newBpm ->  bpm.intValue = newBpm},
+                {newMediaPlayer ->  mediaPlayer.value = newMediaPlayer},
+                songName,
+                difficulty,
+                startCalibration,
+                Modifier.fillMaxSize(),
+            )
 
-        1 -> Game(
-            airBeatsViewModel,
-            mediaPlayer.value,
-            noteTracks.value,
-            bpm.intValue,
-            onLevelEnd,
-            {gameState = 2},
-            modifier,
-        )
+            1 -> Game(
+                airBeatsViewModel,
+                mediaPlayer.value,
+                noteTracks.value,
+                bpm.intValue,
+                onLevelEnd,
+                {gameState = 2},
+                Modifier.fillMaxSize(),
+            )
 
-        2 -> LevelEnd(
-            songName,
-            difficulty,
-            levelStatistics!!,
-            {gameState = 0},
-            airBeatsViewModel,
-            modifier,
-        )
+            2 -> LevelEnd(
+                songName,
+                difficulty,
+                levelStatistics!!,
+                {gameState = 0},
+                airBeatsViewModel,
+                Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 
@@ -168,9 +175,12 @@ fun CalibrationModal(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(8.dp),
             shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(
                 modifier = Modifier
@@ -180,22 +190,25 @@ fun CalibrationModal(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Kalibracja pałek",
+                    text = "Kalibracja pałeczek",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
-                    text = "Przed rozpoczęciem gry należy skalibrować pałki drumstick'ów.",
+                    text = "Przed rozpoczęciem gry należy skalibrować sensory.",
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     text = "Instrukcje:",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Column(
@@ -203,16 +216,19 @@ fun CalibrationModal(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "• Ustaw pałki w pozycji spoczynkowej",
-                        style = MaterialTheme.typography.bodySmall
+                        text = "• Ustaw pałeczki w pozycji spoczynkowej",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "• Upewnij się, że pałki są stabilne",
-                        style = MaterialTheme.typography.bodySmall
+                        text = "• Upewnij się, że są stabilne",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "• Nie ruszaj pałkami podczas kalibracji",
-                        style = MaterialTheme.typography.bodySmall
+                        text = "• Nie ruszaj pałeczkami podczas kalibracji",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -231,7 +247,7 @@ fun CalibrationModal(
                         onClick = onAccept,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Rozpocznij kalibrację")
+                        Text("Kalibruj")
                     }
                 }
             }
@@ -315,23 +331,60 @@ fun Menu(
     }
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(songName)
 
         if (isLoading) {
-            LottieLoading(message = "Gathering data...")
+            LottieLoading(message = "Gathering data: ${songName}...")
             return
         }
+        else{
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    Text(
+                        text = songName,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
 
-        if (error.isNotEmpty()) {
-            ErrorComponent(error)
-        }
+                    if (error.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        ErrorComponent(error)
+                    }
 
-        Button(onClick = startGame, enabled = error.isEmpty()) {
-            Text("play")
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = startGame,
+                        enabled = error.isEmpty(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "PLAY",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+            }
         }
     }
 }
