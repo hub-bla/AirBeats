@@ -72,6 +72,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.facebook.share.model.ShareLinkContent
 import com.facebook.share.widget.ShareDialog
+import pl.put.airbeats.ui.components.Statistics
 import pl.put.airbeats.utils.LottieLoading
 
 @Composable
@@ -901,50 +902,124 @@ fun LevelEnd(
     }
 
     val levelStatistics by levelStatisticviewModel.selectUser(userID).collectAsState(emptyList())
+    val collectedStats = LevelStatisticEntity(
+        userID = userID,
+        songName = songName,
+        difficulty = difficulty,
+        date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+        points = stats.points,
+        good = stats.good,
+        great = stats.great,
+        perfect = stats.perfect,
+        missed = stats.missed,
+        maxCombo = stats.maxCombo
+    )
+    val levelFinished = stats.missed + stats.points > 0
 
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        FacebookShareButton(stats.points)
-        Text("Level ended\nPoints:${stats.points}")
-        //no points for unfinished level
-        Text("Level Statistics")
-        Text("Points: ${stats.points}")
-        Text("Max Combo: ${stats.maxCombo}")
-        Text("Perfect: ${stats.perfect}")
-        Text("Great: ${stats.great}")
-        Text("Good: ${stats.good}")
-        Text("Missed: ${stats.missed}")
-
-        Button(
-            onClick = onSave,
-            enabled = !isSaving
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (levelFinished) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.errorContainer
+                }
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
         ) {
-            if (isSaving) {
-                Text("Saving...")
-            } else {
-                Text("save statistics")
-            }
-        }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                if (levelFinished) {
+                    Text(
+                        text = "Level Completed!",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
+                    )
 
-        if (message.isNotEmpty()) {
-            Text(message)
-        }
+                    Spacer(modifier = Modifier.height(8.dp))
 
-        Button(onClick = startGame) {
-            Text("play again")
-        }
+                    Text(
+                        text = "Points: ${stats.points}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
+                    )
 
-        Text("All Player Statistics")
+                    Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn {
-            items(levelStatistics) { levelStatistic ->
-                Row {
-                    Text("Date: ${levelStatistic.date} points: ${levelStatistic.points} missed: ${levelStatistic.missed}")
+                    Statistics(collectedStats)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FacebookShareButton(stats.points)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = onSave,
+                        enabled = !isSaving,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (isSaving) "Saving..." else "Save Statistics",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+
+                    if (message.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Level Not Finished",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Shame Points: ${stats.points}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = startGame,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+        ) {
+            Text(
+                text = "Play Again",
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }
