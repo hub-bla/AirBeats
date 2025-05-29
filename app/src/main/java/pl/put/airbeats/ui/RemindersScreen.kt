@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,42 +84,45 @@ fun RemindersScreen(navController: NavController) {
     if (isGranted) {
         when (screenState) {
             "calendarEvents" -> {
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Button(onClick = {
-                        pickedTime = "None"
-                        screenState = "calendarEventsCreator"
-                    }) {
-                        Text("Create new calendar reminder")
-                    }
-                    events.entries.forEachIndexed { index, (time, events) ->
-                        CalendarEventComponent(time, events, {
-                            pickedTime = time
+                Scaffold {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Button(onClick = {
+                            pickedTime = "None"
                             screenState = "calendarEventsCreator"
-                        })
-                        if (index < events.size - 1) { // Add spacer only between items
-                            Spacer(modifier = Modifier.height(16.dp)) // Adjust the height to your preference
+                        }) {
+                            Text("Create new calendar reminder")
                         }
-                    }
+                        events.entries.forEachIndexed { index, (time, events) ->
+                            CalendarEventComponent(time, events, {
+                                pickedTime = time
+                                screenState = "calendarEventsCreator"
+                            })
+                            if (index < events.size - 1) { // Add spacer only between items
+                                Spacer(modifier = Modifier.height(16.dp)) // Adjust the height to your preference
+                            }
+                        }
 
+                    }
                 }
             }
 
             "calendarEventsCreator" -> {
                 val calendarEventsAtTime = events.getOrDefault(pickedTime, emptyList<Event>())
-                CalendarForm(
-                    navController,
-                    context,
-                    savedStateHandle,
-                    pickedTime,
-                    calendarEventsAtTime
-                )
+                Scaffold {
+                    CalendarForm(
+                        navController,
+                        context,
+                        savedStateHandle,
+                        pickedTime,
+                        calendarEventsAtTime
+                    )
+                }
             }
         }
 

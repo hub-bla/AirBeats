@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +29,11 @@ import pl.put.airbeats.ui.components.SuccessComponent
 import pl.put.airbeats.utils.room.AirBeatsViewModel
 
 @Composable
-fun SettingsScreen(navController: NavController, airBeatsViewModel: AirBeatsViewModel, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    navController: NavController,
+    airBeatsViewModel: AirBeatsViewModel,
+    modifier: Modifier = Modifier
+) {
     val backStackEntry = navController.currentBackStackEntry
     val savedStateHandle = backStackEntry?.savedStateHandle
     var successMessage by remember { mutableStateOf("") }
@@ -54,40 +60,44 @@ fun SettingsScreen(navController: NavController, airBeatsViewModel: AirBeatsView
         successMessage = ""
         navController.navigate(Screen.Settings.route + "/reminders")
     }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (successMessage != "") {
-            SuccessComponent(
-                successMessage,
-                3000,
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = 30.dp)
-            )
-        }
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-
-            Button(onClick = ::moveToCalendarScreen) {
-                Text("Calendar Reminders")
-            }
-
-            Button(onClick = ::logoutUser) {
-                Text("Log out")
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(
-                    checked = isSavingEnergy,
-                    onCheckedChange = { airBeatsViewModel.changeSavingMode(it) }
+    Scaffold { paddingValues ->
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
+            if (successMessage != "") {
+                SuccessComponent(
+                    successMessage,
+                    3000,
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = 30.dp)
                 )
-                Text("saving energy mode")
+            }
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .fillMaxHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+
+                Button(onClick = ::moveToCalendarScreen) {
+                    Text("Calendar Reminders")
+                }
+
+                Button(onClick = ::logoutUser) {
+                    Text("Log out")
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = isSavingEnergy,
+                        onCheckedChange = { airBeatsViewModel.changeSavingMode(it) }
+                    )
+                    Text("saving energy mode")
+                }
             }
         }
     }
+
 }
