@@ -98,43 +98,12 @@ fun Chip(
 ) {
     SuggestionChip(
         icon = @Composable{
-            Text(label)
+            Text(label, minLines = 2)
         },
         label = @Composable{
-            Text(value)
+            Text(value, minLines = 2)
         },
         onClick = {},
         modifier = modifier.padding(2.dp)
     )
-}
-
-@Preview(showSystemUi = true)
-@Composable
-fun PreviewStatistics() {
-    val statistics = LevelStatisticEntity(
-        id = 123,
-        userID = "123",
-        songName = "short-test",
-        difficulty = "easy",
-        date = "12.12.2025",
-        points = 123000f,
-        perfect = 1,
-        great = 2,
-        good = 3,
-        missed = 4,
-        maxCombo = 0,
-    )
-    AirBeatsTheme {
-        Scaffold { paddingValues ->
-            Column (
-                Modifier.fillMaxSize().padding(paddingValues),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Statistics(
-                    statistics
-                )
-            }
-        }
-    }
 }
