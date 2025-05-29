@@ -99,37 +99,148 @@ fun LevelsScreen(navController: NavController, modifier: Modifier = Modifier) {
 
 @Composable
 fun SelectDifficulty(onDifficultySelected: (String) -> Unit, modifier: Modifier = Modifier) {
-    Scaffold { paddingValues ->
-        Column(
-            modifier = modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val difficulties = listOf("easy", "medium", "hard")
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Select difficulty")
-            Button(
-                modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = { onDifficultySelected("easy") }) {
-                Text("Easy")
-            }
+            Column(
+                modifier = Modifier
+                    .wrapContentSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Select difficulty",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
 
-            Button(
-                modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = { onDifficultySelected("medium") }) {
-                Text("Medium")
-            }
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Button(
-                modifier = Modifier.fillMaxWidth(0.6f),
-                onClick = { onDifficultySelected("hard") }) {
-                Text("Hard")
+                LazyColumn(
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.heightIn(max = 400.dp)
+                ) {
+                    items(difficulties) { difficulty ->
+                        Difficulty(
+                            onDifficultySelected = {
+                                onDifficultySelected(difficulty)
+                            },
+                            difficulty
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+@Composable
+fun Difficulty(onDifficultySelected: () -> Unit, difficulty: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable {
+                onDifficultySelected()
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
+                    val difficultyColor = when (difficulty.lowercase()) {
+                        "easy" -> Color(0xFF4CAF50)
+                        "medium" -> Color(0xFFFF9800)
+                        "hard" -> Color(0xFFF44336)
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                difficultyColor.copy(alpha = 0.1f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = difficulty.uppercase(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = difficultyColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Play song",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+    }
+}
 @Composable
 fun SongsInDifficulty(
     navController: NavController,
@@ -232,7 +343,8 @@ fun SongsInDifficulty(
             }
         }
 
-    }}
+    }
+}
 @Composable
 fun Song(navController: NavController, songName: String, difficulty: String) {
     Card(
