@@ -50,6 +50,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.PixelFormat
 import android.view.WindowManager
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -58,6 +59,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -190,7 +195,7 @@ fun CalibrationModal(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Kalibracja pałeczek",
+                    text = "Stick Calibration",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -198,14 +203,14 @@ fun CalibrationModal(
                 )
 
                 Text(
-                    text = "Przed rozpoczęciem gry należy skalibrować sensory.",
+                    text = "You need to calibrate the sensors before starting the game.",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
-                    text = "Instrukcje:",
+                    text = "Instructions:",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -216,17 +221,17 @@ fun CalibrationModal(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "• Ustaw pałeczki w pozycji spoczynkowej",
+                        text = "• Place the sticks in a resting position",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "• Upewnij się, że są stabilne",
+                        text = "• Make sure they are stable",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "• Nie ruszaj pałeczkami podczas kalibracji",
+                        text = "• Do not move the sticks during calibration",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -240,20 +245,21 @@ fun CalibrationModal(
                         onClick = onCancel,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Anuluj")
+                        Text("Cancel")
                     }
 
                     Button(
                         onClick = onAccept,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Kalibruj")
+                        Text("Calibrate")
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun Menu(
@@ -414,7 +420,7 @@ fun Game(
     val glViewRef = remember { mutableStateOf<MyGLSurfaceView?>(null) }
     val rendererRef = remember { mutableStateOf<MyGLRenderer?>(null) }
     var isConnected by remember { mutableStateOf(false) }
-    var isConnecting by remember { mutableStateOf(false) }
+    var isConnecting by remember { mutableStateOf(true) }
     var hasReceivedFirstMessage by remember { mutableStateOf(false) }
     var isGamePaused by remember { mutableStateOf(false) }
     var gameStarted by remember { mutableStateOf(false) }
@@ -646,27 +652,72 @@ fun Game(
 
                 }
                 !isConnected && !isConnecting -> {
-                    Text("Failed to connect to Bluetooth device")
-                    Button(
-                        onClick = {
-                            bluetoothManager.value.disconnect()
-                            scope.launch {
-                                connectToDevice()
+
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                        ) {
+                            Text(
+                                text = "Failed to connect to Bluetooth device",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = {
+                                    bluetoothManager.value.disconnect()
+                                    scope.launch {
+                                        connectToDevice()
+                                    }
+                                },
+                                enabled = !isConnecting,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Retry Connection",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
                             }
-                        },
-                        enabled = !isConnecting
-                    ) {
-                        Text("Retry Connection")
-                    }
-                    Button(
-                        onClick = {
-                            bluetoothManager.value.disconnect()
-                            isConnected = true
-                            hasReceivedFirstMessage = true
-                        },
-                        enabled = !isConnecting
-                    ) {
-                        Text("Anyway...")
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedButton(
+                                onClick = {
+                                    bluetoothManager.value.disconnect()
+                                    isConnected = true
+                                    hasReceivedFirstMessage = true
+                                },
+                                enabled = !isConnecting,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Text(
+                                    text = "Anyway...",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                        }
                     }
                 }
                 isConnected && !hasReceivedFirstMessage -> {
@@ -678,52 +729,114 @@ fun Game(
     }
 
     if (isGamePaused) {
+
         Column(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.9f)),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Game Paused",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    Log.d("Game", "Resume button pressed")
-                    isGamePaused = false
-                    glViewRef.value?.onResume()
-                    resumeMediaPlayer()
-                }
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 8.dp
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
             ) {
-                Text("Resume Game")
-            }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp)
+                ) {
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    Log.d("Game", "Exit button pressed")
+                    Text(
+                        text = "Game Paused",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
 
-                        Log.d("Game", "Exit button pressed")
-                        try {
-                            if (mediaPlayer.isPlaying) {
-                                mediaPlayer.stop()
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = {
+                            Log.d("Game", "Resume button pressed")
+                            isGamePaused = false
+                            glViewRef.value?.onResume()
+                            resumeMediaPlayer()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Resume Game",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            Log.d("Game", "Exit button pressed")
+                            try {
+                                if (mediaPlayer.isPlaying) {
+                                    mediaPlayer.stop()
+                                }
+                            } catch (e: Exception) {
+                                Log.e("Game", "Error stopping MediaPlayer on exit: ${e.message}")
                             }
-                        } catch (e: Exception) {
-                            Log.e("Game", "Error stopping MediaPlayer on exit: ${e.message}")
-                        }
-
-
-                        bluetoothManager.value.disconnect()
-                        onLevelEnd(LevelStatistics())
-
+                            bluetoothManager.value.disconnect()
+                            onLevelEnd(LevelStatistics())
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = BorderStroke(
+                            2.dp,
+                            MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Exit Game",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
-            ) {
-                Text("Exit Game")
             }
         }
         return
@@ -847,7 +960,7 @@ fun FacebookShareButton(
 
     val quote = "Got $points points in AirBeats!"
 
-    // Reużywamy dialogu
+
     val shareDialog = remember {
         activity?.let { ShareDialog(it) }
     }
