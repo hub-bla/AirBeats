@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,8 +31,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
 import pl.put.airbeats.LocalUser
 import pl.put.airbeats.ui.components.ErrorComponent
-import pl.put.airbeats.ui.components.Loading
-import pl.put.airbeats.utils.bt.BluetoothManager
+import pl.put.airbeats.utils.udp.UdpManager
 import pl.put.airbeats.utils.game.LevelStatistics
 import pl.put.airbeats.utils.game.MyGLRenderer
 import pl.put.airbeats.utils.game.MyGLSurfaceView
@@ -61,7 +58,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
@@ -427,7 +423,7 @@ fun Game(
     var gameStarted by remember { mutableStateOf(false) }
     var mediaPlayerPosition by remember { mutableIntStateOf(0) }
     var wasMediaPlayerPlaying by remember { mutableStateOf(false) }
-    val bluetoothManager = remember { mutableStateOf(BluetoothManager()) }
+    val udpManager = remember { mutableStateOf(UdpManager()) }
     var preventAutoResume by remember { mutableStateOf(false) }
 
     val isSavingEnergy by airBeatsViewModel.isSavingEnergy.collectAsState()
@@ -528,7 +524,7 @@ fun Game(
 
         onDispose {
             changeState()
-            bluetoothManager.value.disconnect()
+            udpManager.value.disconnect()
             try {
                 if (mediaPlayer.isPlaying) {
                     mediaPlayer.stop()
@@ -562,17 +558,17 @@ fun Game(
         }
     }
 
-    val connectToDevice = suspend {
+    val connectToServer = suspend {
         isConnecting = true
         hasReceivedFirstMessage = false
         try {
             val connected = withContext(Dispatchers.IO) {
-                bluetoothManager.value.connectToDevice("airdrums")
+                udpManager.value.connectToServer("192.168.1.32", 2138) // example IP/port
             }
             isConnected = connected
-            Log.d("BLE_CONNECTION", "Connection result: $connected")
+            Log.d("UDP_CONNECTION", "Connection result: $connected")
         } catch (e: Exception) {
-            Log.e("BLE_CONNECTION", "Connection failed: ${e.message}")
+            Log.e("UDP_CONNECTION", "Connection failed: ${e.message}")
             isConnected = false
         } finally {
             isConnecting = false
@@ -590,7 +586,7 @@ fun Game(
             isSavingEnergy,
             { stats ->
                 onLevelEnd(stats)
-                bluetoothManager.value.disconnect()
+                udpManager.value.disconnect()
             }
         )
         glView.setZOrderOnTop(true)
@@ -599,33 +595,30 @@ fun Game(
         rendererRef.value = glView.renderer
         Log.d("Game", "GLSurfaceView created early")
 
-        connectToDevice()
+        connectToServer()
     }
 
     LaunchedEffect(isConnected, glViewRef.value) {
         if (isConnected && glViewRef.value != null) {
-            Log.d("BLE_LISTENING", "Starting receiving loop")
             try {
-                bluetoothManager.value.startReceivingLoop(glViewRef.value!!) { data ->
+                udpManager.value.startReceivingLoop(glViewRef.value!!) { data ->
                     if (!hasReceivedFirstMessage) {
                         hasReceivedFirstMessage = true
-                        Log.d("BLE_LISTENING", "First message received")
+                        Log.d("UDP_LISTENING", "First message received")
                     }
 
                     if (!isGamePaused) {
                         rendererRef.value?.columnEvent = data[2].toInt()
                         rendererRef.value?.hasEventOccured = data[2].toInt() != 9
-                        if(data[0] == "r"){
+                        if (data[0] == "r") {
                             rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
-                        }
-                        else if (data[0] == "l"){
+                        } else if (data[0] == "l") {
                             rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
                         }
                     }
-                    Log.d("DATARECV", data.toString())
                 }
             } catch (e: Exception) {
-                Log.e("BLE_LISTENING", "Error in receiving loop: ${e.message}")
+                Log.e("UDP_LISTENING", "Error in receiving loop: ${e.message}")
                 isConnected = false
                 hasReceivedFirstMessage = false
             }
@@ -681,9 +674,9 @@ fun Game(
 
                             Button(
                                 onClick = {
-                                    bluetoothManager.value.disconnect()
+                                    udpManager.value.disconnect()
                                     scope.launch {
-                                        connectToDevice()
+                                        connectToServer()
                                     }
                                 },
                                 enabled = !isConnecting,
@@ -699,7 +692,7 @@ fun Game(
 
                             OutlinedButton(
                                 onClick = {
-                                    bluetoothManager.value.disconnect()
+                                    udpManager.value.disconnect()
                                     isConnected = true
                                     hasReceivedFirstMessage = true
                                 },
@@ -811,7 +804,7 @@ fun Game(
                             } catch (e: Exception) {
                                 Log.e("Game", "Error stopping MediaPlayer on exit: ${e.message}")
                             }
-                            bluetoothManager.value.disconnect()
+                            udpManager.value.disconnect()
                             onLevelEnd(LevelStatistics())
                         },
                         modifier = Modifier
