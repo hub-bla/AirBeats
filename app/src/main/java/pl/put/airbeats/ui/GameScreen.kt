@@ -601,19 +601,21 @@ fun Game(
     LaunchedEffect(isConnected, glViewRef.value) {
         if (isConnected && glViewRef.value != null) {
             try {
-                udpManager.value.startReceivingLoop(glViewRef.value!!) { data ->
-                    if (!hasReceivedFirstMessage) {
-                        hasReceivedFirstMessage = true
-                        Log.d("UDP_LISTENING", "First message received")
-                    }
+                scope.launch {
+                    udpManager.value.startReceivingLoop(glViewRef.value!!) { data ->
+                        if (!hasReceivedFirstMessage) {
+                            hasReceivedFirstMessage = true
+                            Log.d("UDP_LISTENING", "First message received")
+                        }
 
-                    if (!isGamePaused) {
-                        rendererRef.value?.columnEvent = data[2].toInt()
-                        rendererRef.value?.hasEventOccured = data[2].toInt() != 9
-                        if (data[0] == "r") {
-                            rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
-                        } else if (data[0] == "l") {
-                            rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
+                        if (!isGamePaused) {
+                            rendererRef.value?.columnEvent = data[2].toInt()
+                            rendererRef.value?.hasEventOccured = data[2].toInt() != 9
+                            if (data[0] == "r") {
+                                rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
+                            } else if (data[0] == "l") {
+                                rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
+                            }
                         }
                     }
                 }
