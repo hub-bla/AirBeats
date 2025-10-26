@@ -2,29 +2,38 @@ package pl.put.airbeats.utils.udp
 
 import android.opengl.GLSurfaceView
 import android.util.Log
-import java.net.DatagramPacket
-import java.net.DatagramSocket
+import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicBoolean
+import io.ktor.network.selector.*
+import io.ktor.network.sockets.*
+import io.ktor.utils.io.core.ByteReadPacket
+import kotlinx.io.readString
 
 class UdpManager {
 
-    private var socket: DatagramSocket? = null
+    private lateinit var socket: BoundDatagramSocket
     private var remoteAddress: InetAddress? = null
     private var remotePort: Int = 0
-    private var receivingThread: Thread? = null
     private val isReceiving = AtomicBoolean(false)
 
-    fun connectToServer(ip: String, port: Int): Boolean {
+    suspend fun connectToServer(ip: String, port: Int): Boolean {
         return try {
             remoteAddress = InetAddress.getByName(ip)
             remotePort = port
-            socket = DatagramSocket()
-            socket?.soTimeout = 0
+            val selectorManager = SelectorManager(Dispatchers.IO)
+            socket = aSocket(selectorManager)
+                .udp()
+                .bind("0.0.0.0", port)
             Log.d("UdpManager", "Connected to $ip:$port")
-            val message = "hello".toByteArray()
-            val packet = DatagramPacket(message, message.size, remoteAddress, remotePort)
-            socket?.send(packet)
+            val packet = ByteReadPacket("hello".encodeToByteArray())
+            val target = InetSocketAddress(ip, port)
+            socket.send(
+                Datagram(
+                    packet,
+                    target
+                )
+            )
             true
         } catch (e: Exception) {
             Log.e("UdpManager", "Connect error: ${e.message}")
@@ -32,62 +41,38 @@ class UdpManager {
         }
     }
 
-    fun startReceivingLoop(glView: GLSurfaceView, onData: (List<String>) -> Unit) {
-        if (socket == null) {
-            Log.e("UdpManager", "Socket not initialized")
-            return
-        }
-
+    suspend fun startReceivingLoop(glView: GLSurfaceView, onData: (List<String>) -> Unit) {
         isReceiving.set(true)
-        receivingThread = Thread {
-            val buffer = ByteArray(1024)
+        while (isReceiving.get()) {
+            try {
+                val datagram = socket.receive()
+                val data = datagram.packet.readString()
 
-            while (isReceiving.get()) {
-                try {
-                    val packet = DatagramPacket(buffer, buffer.size)
-                    socket?.receive(packet)
-                    val data = String(packet.data, 0, packet.length)
-                    Log.d("UdpManager", "Received: $data")
-
-                    if (data.length == 5 && data[0] in listOf('r', 'l', 'c')) {
-                        glView.queueEvent {
-                            onData(
-                                listOf(
-                                    data[0].toString(),
-                                    data.slice(1..3),
-                                    data[4].toString()
-                                )
+                if (data.length == 5 && data[0] in listOf('r', 'l', 'c')) {
+                    glView.queueEvent {
+                        onData(
+                            listOf(
+                                data[0].toString(),
+                                data.slice(1..3),
+                                data[4].toString()
                             )
-                        }
-                    } else {
-                        Log.w("UdpManager", "Dropped invalid packet: $data")
+                        )
                     }
-
-                } catch (e: Exception) {
-                    Log.e("UdpManager", "Receive loop error: ${e.message}")
-                    break
+                } else {
+                    Log.w("UdpManager", "Dropped invalid packet: $data")
                 }
-            }
-        }
-        receivingThread?.start()
-    }
 
-    fun sendMessage(message: String) {
-        try {
-            val data = message.toByteArray()
-            val packet = DatagramPacket(data, data.size, remoteAddress, remotePort)
-            socket?.send(packet)
-            Log.d("UdpManager", "Sent: $message")
-        } catch (e: Exception) {
-            Log.e("UdpManager", "Send error: ${e.message}")
+            } catch (e: Exception) {
+                Log.e("UdpManager", "Receive loop error: ${e.message}")
+                break
+            }
         }
     }
 
     fun disconnect() {
         isReceiving.set(false)
         try {
-            receivingThread?.interrupt()
-            socket?.close()
+            socket.close()
             Log.d("UdpManager", "Socket closed.")
         } catch (e: Exception) {
             Log.e("UdpManager", "Close error: ${e.message}")
