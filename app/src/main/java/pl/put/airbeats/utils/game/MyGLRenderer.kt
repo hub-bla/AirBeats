@@ -14,7 +14,7 @@ import kotlin.math.abs
 
 // Game related constants
 const val LINE_HEIGHT = -0.7f // top = 1f, bottom = -1f
-const val STICK_HEIGHT = 0f // top = 1f, bottom = -1f
+const val STICK_HEIGHT = -0.7f  // top = 1f, bottom = -1f
 const val TILE_ON_SCREEN_TIME = 1500f // in milliseconds
 const val TILE_SPEED = 2f / TILE_ON_SCREEN_TIME
 const val START_DELAY = 2000f // in milliseconds
