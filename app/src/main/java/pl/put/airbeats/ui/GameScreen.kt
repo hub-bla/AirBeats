@@ -602,19 +602,19 @@ fun Game(
         if (isConnected && glViewRef.value != null) {
             try {
                 scope.launch {
-                    udpManager.value.startReceivingLoop(glViewRef.value!!) { data ->
+                    udpManager.value.startReceivingLoop(glViewRef.value!!) { isLeft, pos, columnEvent ->
                         if (!hasReceivedFirstMessage) {
                             hasReceivedFirstMessage = true
                             Log.d("UDP_LISTENING", "First message received")
                         }
 
                         if (!isGamePaused) {
-                            rendererRef.value?.columnEvent = data[2].toInt()
-                            rendererRef.value?.hasEventOccured = data[2].toInt() != 9
-                            if (data[0] == "r") {
-                                rendererRef.value?.rightStickPos = data[1].toFloat() / 180 - 1
-                            } else if (data[0] == "l") {
-                                rendererRef.value?.leftStickPos = data[1].toFloat() / 180 - 1
+                            rendererRef.value?.columnEvent = columnEvent
+                            rendererRef.value?.hasEventOccured = columnEvent != 9
+                            if (isLeft) {
+                                rendererRef.value?.leftStickPos = pos.toFloat()
+                            } else {
+                                rendererRef.value?.rightStickPos = pos.toFloat()
                             }
                         }
                     }
